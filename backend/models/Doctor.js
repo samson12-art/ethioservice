@@ -1,16 +1,15 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const doctorSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  specialty: { type: String, required: true },
-  specialtyName: { type: String, required: true },
-  experience: { type: String, required: true },
-  hospital: { type: String, required: true },
-  fee: { type: Number, required: true },
-  city: { type: String, required: true },
-  rating: { type: Number, default: 0 },
-  avatar: { type: String },
-  isAvailable: { type: Boolean, default: true }
-}, { timestamps: true });
+const Doctor = sequelize.define('Doctor', {
+  name: { type: DataTypes.STRING, allowNull: false },
+  specialtyName: { type: DataTypes.STRING },
+  hospital: { type: DataTypes.STRING },
+  fee: { type: DataTypes.FLOAT },
+  rating: { type: DataTypes.FLOAT, defaultValue: 4.5 },
+  city: { type: DataTypes.STRING }
+}, {
+  timestamps: true
+});
 
-module.exports = mongoose.model('Doctor', doctorSchema);
+module.exports = Doctor;

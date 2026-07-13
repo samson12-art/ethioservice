@@ -1,20 +1,13 @@
 const express = require('express');
-const Tutor = require('../models/Tutor');
+const { getTutors, createTutor, updateTutor, deleteTutor } = require('../controllers/tutorController');
+const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
-  try {
-    const { subject, gradeLevel } = req.query;
-    let query = { isAvailable: true };
-    if (subject) query.subject = subject;
-    if (gradeLevel) query.gradeLevel = gradeLevel;
-    
-    const tutors = await Tutor.find(query);
-    res.json({ success: true, data: tutors });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.get('/', getTutors);
+
+router.post('/', protect, authorize('admin', 'provider'), createTutor);
+router.put('/:id', protect, authorize('admin', 'provider'), updateTutor);
+router.delete('/:id', protect, authorize('admin'), deleteTutor);
 
 module.exports = router;

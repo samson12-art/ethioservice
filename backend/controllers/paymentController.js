@@ -1,103 +1,121 @@
+const Payment = require('../models/Payment');
 const Booking = require('../models/Booking');
 
-// Process Telebirr payment
-const processTelebirrPayment = async (req, res) => {
+const processPayment = async (req, res) => {
   try {
-    const { bookingId, phoneNumber } = req.body;
-    
-    const booking = await Booking.findById(bookingId);
+    const { bookingId, method, phoneNumber, email } = req.body;
+
+    const booking = await Booking.findByPk(bookingId);
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-    
-    // Simulate Telebirr API call
-    const transactionId = 'TEL_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-    
-    booking.paymentMethod = 'telebirr';
-    booking.paymentStatus = 'paid';
-    booking.paymentId = transactionId;
-    booking.paymentDate = new Date();
-    booking.customerPhone = phoneNumber;
-    booking.status = 'confirmed';
-    await booking.save();
-    
-    res.json({ 
-      success: true, 
-      message: '✅ Telebirr payment successful!',
+
+    if (booking.status !== 'pending_payment') {
+      return res.status(400).json({ success: false, message: 'Payment already processed' });
+    }
+
+    const transactionId = 'TXN_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8).toUpperCase();
+
+    await Payment.create({
+      bookingId: bookingId.toString(),
+      userId: req.user.id.toString(),
+      amount: booking.upfrontAmount,
+      method,
+      status: 'completed',
       transactionId,
-      booking 
+      phoneNumber,
+      email,
+      paymentType: 'upfront'
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
 
-// Process Chapa payment
-const processChapaPayment = async (req, res) => {
-  try {
-    const { bookingId, email } = req.body;
-    
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
-    
-    // Simulate Chapa API call
-    const transactionId = 'CHAPA_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-    
-    booking.paymentMethod = 'chapa';
-    booking.paymentStatus = 'paid';
+    booking.paymentMethod = method;
     booking.paymentId = transactionId;
-    booking.paymentDate = new Date();
-    booking.customerEmail = email;
     booking.status = 'confirmed';
+    booking.upfrontPaid = true;
     await booking.save();
-    
-    res.json({ 
-      success: true, 
-      message: '✅ Chapa payment successful!',
-      transactionId,
-      booking 
+
+    res.json({
+      success: true,
+      message: `Upfront payment of ${Math.round(booking.upfrontAmount)} Br successful! Booking confirmed.`,
+      data: {
+        bookingId: booking.id,
+        transactionId,
+        upfrontAmount: booking.upfrontAmount,
+        remainingAmount: booking.remainingAmount,
+        method
+      }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Process Cash payment
-const processCashPayment = async (req, res) => {
+const processRemainingPayment = async (req, res) => {
   try {
-    const { bookingId } = req.body;
-    
-    const booking = await Booking.findById(bookingId);
+    const { bookingId, method, phoneNumber, email } = req.body;
+
+    const booking = await Booking.findByPk(bookingId);
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-    
-    booking.paymentMethod = 'cash';
-    booking.paymentStatus = 'pending';
-    booking.status = 'confirmed';
+
+    if (booking.status !== 'completed') {
+      return res.status(400).json({ success: false, message: 'Service not completed yet' });
+    }
+
+    if (booking.remainingPaid) {
+      return res.status(400).json({ success: false, message: 'Remaining payment already processed' });
+    }
+
+    const transactionId = 'TXN_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8).toUpperCase();
+
+    await Payment.create({
+      bookingId: bookingId.toString(),
+      userId: req.user.id.toString(),
+      amount: booking.remainingAmount,
+      method,
+      status: 'completed',
+      transactionId,
+      phoneNumber,
+      email,
+      paymentType: 'remaining'
+    });
+
+    booking.remainingPaid = true;
+    booking.status = 'fully_paid';
     await booking.save();
-    
-    res.json({ 
-      success: true, 
-      message: '✅ Booking confirmed! Pay cash to the service provider.',
-      booking 
+
+    res.json({
+      success: true,
+      message: `Remaining payment of ${Math.round(booking.remainingAmount)} Br successful! Booking fully paid.`,
+      data: { bookingId: booking.id, transactionId, remainingAmount: booking.remainingAmount }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Get payment status
+const getPaymentHistory = async (req, res) => {
+  try {
+    const payments = await Payment.findAll({
+      where: { userId: req.user.id.toString() },
+      order: [['createdAt', 'DESC']]
+    });
+    res.json({ success: true, data: payments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const getPaymentStatus = async (req, res) => {
   try {
-    const { bookingId } = req.params;
-    const booking = await Booking.findById(bookingId);
-    
-    res.json({ 
-      success: true, 
-      paymentStatus: booking.paymentStatus,
+    const booking = await Booking.findByPk(req.params.bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    res.json({
+      success: true,
+      paymentStatus: booking.upfrontPaid ? 'paid' : 'pending',
       paymentMethod: booking.paymentMethod,
       amount: booking.totalPrice,
       transactionId: booking.paymentId
@@ -107,9 +125,4 @@ const getPaymentStatus = async (req, res) => {
   }
 };
 
-module.exports = { 
-  processTelebirrPayment, 
-  processChapaPayment, 
-  processCashPayment,
-  getPaymentStatus 
-};
+module.exports = { processPayment, processRemainingPayment, getPaymentHistory, getPaymentStatus };

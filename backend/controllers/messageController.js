@@ -1,115 +1,111 @@
-const Message = require('../models/Message');
+const Message = require('../models/message');
 const User = require('../models/User');
+const { Op } = require('sequelize');
 
-// Send a message
 const sendMessage = async (req, res) => {
   try {
     const { receiverId, message } = req.body;
-    const senderId = req.user._id;
 
     const newMessage = await Message.create({
-      sender: senderId,
-      receiver: receiverId,
-      message: message
+      senderId: req.user.id.toString(),
+      receiverId: receiverId.toString(),
+      message
     });
 
-    const populatedMessage = await Message.findById(newMessage._id)
-      .populate('sender', 'name avatar')
-      .populate('receiver', 'name avatar');
-
-    res.status(201).json({ success: true, data: populatedMessage });
+    res.status(201).json({ success: true, data: newMessage });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Get conversations for a user
 const getConversations = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id.toString();
 
-    const messages = await Message.find({
-      $or: [{ sender: userId }, { receiver: userId }]
-    }).sort('-createdAt');
+    const messages = await Message.findAll({
+      where: {
+        [Op.or]: [{ senderId: userId }, { receiverId: userId }]
+      },
+      order: [['createdAt', 'DESC']]
+    });
 
-    const conversationUsers = new Map();
+    const conversationMap = new Map();
 
     for (const msg of messages) {
-      const otherUserId = msg.sender.toString() === userId.toString() ? msg.receiver : msg.sender;
-      
-      if (!conversationUsers.has(otherUserId.toString())) {
-        const otherUser = await User.findById(otherUserId).select('name avatar role email phone');
-        const unreadCount = await Message.countDocuments({
-          sender: otherUserId,
-          receiver: userId,
-          read: false
+      const otherUserId = msg.senderId === userId ? msg.receiverId : msg.senderId;
+
+      if (!conversationMap.has(otherUserId)) {
+        const otherUser = await User.findByPk(otherUserId, {
+          attributes: ['id', 'name', 'email', 'role']
         });
-        
-        conversationUsers.set(otherUserId.toString(), {
+
+        const unreadCount = await Message.count({
+          where: { senderId: otherUserId, receiverId: userId, read: false }
+        });
+
+        conversationMap.set(otherUserId, {
           user: otherUser,
           lastMessage: msg.message,
           lastMessageTime: msg.createdAt,
-          unreadCount: unreadCount
+          unreadCount
         });
       }
     }
 
-    const conversations = Array.from(conversationUsers.values());
+    const conversations = Array.from(conversationMap.values());
     res.json({ success: true, data: conversations });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Get messages between two users
 const getMessages = async (req, res) => {
   try {
     const { userId } = req.params;
-    const currentUserId = req.user._id;
+    const currentUserId = req.user.id.toString();
 
-    const messages = await Message.find({
-      $or: [
-        { sender: currentUserId, receiver: userId },
-        { sender: userId, receiver: currentUserId }
-      ]
-    }).sort('createdAt').populate('sender', 'name avatar');
+    const messages = await Message.findAll({
+      where: {
+        [Op.or]: [
+          { senderId: currentUserId, receiverId: userId },
+          { senderId: userId, receiverId: currentUserId }
+        ]
+      },
+      order: [['createdAt', 'ASC']]
+    });
 
-    // Mark messages as read
-    await Message.updateMany(
-      { sender: userId, receiver: currentUserId, read: false },
-      { $set: { read: true } }
+    await Message.update(
+      { read: true },
+      { where: { senderId: userId, receiverId: currentUserId, read: false } }
     );
 
     res.json({ success: true, data: messages });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Mark messages as read
 const markAsRead = async (req, res) => {
   try {
     const { senderId } = req.body;
-    await Message.updateMany(
-      { sender: senderId, receiver: req.user._id, read: false },
-      { $set: { read: true } }
+    await Message.update(
+      { read: true },
+      { where: { senderId, receiverId: req.user.id.toString(), read: false } }
     );
     res.json({ success: true });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Get unread message count
 const getUnreadCount = async (req, res) => {
   try {
-    const count = await Message.countDocuments({
-      receiver: req.user._id,
-      read: false
+    const count = await Message.count({
+      where: { receiverId: req.user.id.toString(), read: false }
     });
     res.json({ success: true, count });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

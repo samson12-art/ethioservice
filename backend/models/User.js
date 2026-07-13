@@ -1,25 +1,33 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true, select: false },
-  role: { type: String, enum: ['customer', 'provider', 'admin'], default: 'customer' },
-  phone: { type: String },
-  city: { type: String, default: 'Addis Ababa' },
-  avatar: { type: String },
-  createdAt: { type: Date, default: Date.now }
+const User = sequelize.define('User', {
+  name: { type: DataTypes.STRING, allowNull: false },
+  email: { type: DataTypes.STRING, allowNull: false, unique: true },
+  password: { type: DataTypes.STRING, allowNull: false },
+  phone: { type: DataTypes.STRING },
+  city: { type: DataTypes.STRING },
+  role: { type: DataTypes.STRING, defaultValue: 'customer' },
+  isVerified: { type: DataTypes.BOOLEAN, defaultValue: false },
+  profession: { type: DataTypes.STRING },
+  experience: { type: DataTypes.STRING },
+  price: { type: DataTypes.FLOAT },
+  priceUnit: { type: DataTypes.STRING },
+  description: { type: DataTypes.TEXT }
+}, {
+  timestamps: true,
+  hooks: {
+    beforeSave: async (user) => {
+      if (user.changed('password')) {
+        user.password = await bcrypt.hash(user.password, 10);
+      }
+    }
+  }
 });
 
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
-
-userSchema.methods.comparePassword = async function(password) {
+User.prototype.comparePassword = async function(password) {
   return await bcrypt.compare(password, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = User;

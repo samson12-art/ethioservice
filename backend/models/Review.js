@@ -1,13 +1,15 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const reviewSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  userName: { type: String, required: true },
-  professionalId: { type: String, required: true },
-  professionalType: { type: String, required: true },
-  rating: { type: Number, min: 1, max: 5, required: true },
-  comment: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
+const Review = sequelize.define('Review', {
+  userId: { type: DataTypes.STRING },
+  userName: { type: DataTypes.STRING },
+  professionalId: { type: DataTypes.STRING },
+  professionalType: { type: DataTypes.STRING },
+  rating: { type: DataTypes.FLOAT },
+  comment: { type: DataTypes.TEXT }
+}, {
+  timestamps: true
 });
 
-module.exports = mongoose.model('Review', reviewSchema);
+module.exports = Review;

@@ -1,88 +1,55 @@
 const express = require('express');
 const router = express.Router();
 
-// Import your models
 const Tutor = require('../models/Tutor');
 const Service = require('../models/Service');
 const Doctor = require('../models/Doctor');
 
-// GET /api/lists/subjects - Return all tutor subjects
 router.get('/subjects', async (req, res) => {
   try {
-    // Get unique subjects from tutors collection
-    const subjects = await Tutor.distinct('subject');
-    
-    res.json({
-      success: true,
-      data: subjects.filter(s => s && s !== '')
+    const subjects = await Tutor.findAll({
+      attributes: [[require('sequelize').fn('DISTINCT', require('sequelize').col('subject')), 'subject']]
     });
+    const result = subjects.map(s => s.subject).filter(s => s && s !== '');
+    res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error fetching subjects:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error',
-      error: error.message 
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// GET /api/lists/levels - Return all grade levels
 router.get('/levels', async (req, res) => {
   try {
-    // Get unique levels from tutors collection
-    const levels = await Tutor.distinct('level');
-    
-    res.json({
-      success: true,
-      data: levels.filter(l => l && l !== '')
+    const levels = await Tutor.findAll({
+      attributes: [[require('sequelize').fn('DISTINCT', require('sequelize').col('level')), 'level']]
     });
+    const result = levels.map(l => l.level).filter(l => l && l !== '');
+    res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error fetching levels:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error',
-      error: error.message 
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// GET /api/lists/professions - Return all service professions
 router.get('/professions', async (req, res) => {
   try {
-    // Get unique categories from services collection
-    const professions = await Service.distinct('category');
-    
-    res.json({
-      success: true,
-      data: professions.filter(p => p && p !== '')
+    const professions = await Service.findAll({
+      attributes: [[require('sequelize').fn('DISTINCT', require('sequelize').col('category')), 'category']]
     });
+    const result = professions.map(p => p.category).filter(p => p && p !== '');
+    res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error fetching professions:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error',
-      error: error.message 
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// GET /api/lists/specialties - Return all doctor specialties
 router.get('/specialties', async (req, res) => {
   try {
-    // Get unique specialties from doctors collection
-    const specialties = await Doctor.distinct('specialtyName');
-    
-    res.json({
-      success: true,
-      data: specialties.filter(s => s && s !== '')
+    const specialties = await Doctor.findAll({
+      attributes: [[require('sequelize').fn('DISTINCT', require('sequelize').col('specialtyName')), 'specialtyName']]
     });
+    const result = specialties.map(s => s.specialtyName).filter(s => s && s !== '');
+    res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error fetching specialties:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error',
-      error: error.message 
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

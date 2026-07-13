@@ -1,133 +1,156 @@
 const Booking = require('../models/Booking');
 const Service = require('../models/Service');
 const Doctor = require('../models/Doctor');
+const Tutor = require('../models/Tutor');
 
-// Create a new booking
 const createBooking = async (req, res) => {
   try {
-    const { serviceType, itemId, bookingDate, time } = req.body;
-    
-    console.log('📝 Creating booking:', { serviceType, itemId, userId: req.user._id });
-    
-    let provider, totalPrice;
-    
-    if (serviceType === 'service') {
-      const service = await Service.findById(itemId);
-      if (!service) {
-        return res.status(404).json({ success: false, message: 'Service not found' });
-      }
-      provider = service.provider || req.user._id;
-      totalPrice = service.price;
-    } else if (serviceType === 'doctor') {
-      const doctor = await Doctor.findById(itemId);
-      if (!doctor) {
+    const { serviceType, itemId, bookingDate, time, bookingMode } = req.body;
+
+    let item = null;
+    let totalPrice = 0;
+    let itemName = '';
+
+    if (serviceType === 'doctor') {
+      const doctors = await Doctor.findAll();
+      item = doctors.find(d => d.id.toString() === itemId.toString());
+      if (!item) {
         return res.status(404).json({ success: false, message: 'Doctor not found' });
       }
-      provider = doctor._id;
-      totalPrice = doctor.fee;
+      totalPrice = item.fee;
+      itemName = item.name;
+    } else if (serviceType === 'service') {
+      const services = await Service.findAll();
+      item = services.find(s => s.id.toString() === itemId.toString());
+      if (!item) {
+        return res.status(404).json({ success: false, message: 'Service not found' });
+      }
+      totalPrice = item.price;
+      itemName = item.title;
+    } else if (serviceType === 'tutor') {
+      const tutors = await Tutor.findAll();
+      item = tutors.find(t => t.id.toString() === itemId.toString());
+      if (!item) {
+        return res.status(404).json({ success: false, message: 'Tutor not found' });
+      }
+      totalPrice = item.fee;
+      itemName = item.name;
     } else {
       return res.status(400).json({ success: false, message: 'Invalid service type' });
     }
-    
+
+    const serviceFee = totalPrice * 0.0095;
+    const guaranteeFee = totalPrice * 0.05;
+    const upfrontAmount = totalPrice * 0.0595;
+    const remainingAmount = totalPrice - upfrontAmount;
+
     const booking = await Booking.create({
       serviceType,
-      itemId,
-      customer: req.user._id,
-      provider,
+      itemId: itemId.toString(),
+      itemName,
+      customerId: req.user.id.toString(),
+      providerId: item.providerId || '',
+      providerName: item.providerName || item.name || '',
       bookingDate: new Date(bookingDate),
       time,
       totalPrice,
-      status: 'pending',
-      paymentStatus: 'pending'
+      serviceFee,
+      guaranteeFee,
+      upfrontAmount,
+      remainingAmount,
+      bookingMode: bookingMode || 'online',
+      status: 'pending_payment'
     });
-    
-    console.log('✅ Booking created:', booking._id);
-    
-    res.status(201).json({ success: true, data: booking });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        bookingId: booking.id,
+        totalPrice: Math.round(totalPrice),
+        serviceFee: Math.round(serviceFee),
+        guaranteeFee: Math.round(guaranteeFee),
+        upfrontAmount: Math.round(upfrontAmount),
+        remainingAmount: Math.round(remainingAmount),
+        itemName
+      }
+    });
   } catch (error) {
-    console.error('❌ Booking error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Get user's bookings
 const getUserBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ customer: req.user._id })
-      .populate('itemId')
-      .sort('-createdAt');
-    
+    const bookings = await Booking.findAll({
+      where: { customerId: req.user.id.toString() },
+      order: [['createdAt', 'DESC']]
+    });
     res.json({ success: true, data: bookings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Get provider's bookings
 const getProviderBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ provider: req.user._id })
-      .populate('customer', 'name email phone')
-      .sort('-createdAt');
-    
+    const bookings = await Booking.findAll({
+      where: { providerId: req.user.id.toString() },
+      order: [['createdAt', 'DESC']]
+    });
     res.json({ success: true, data: bookings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Update booking status
 const updateBookingStatus = async (req, res) => {
   try {
     const { bookingId, status } = req.body;
-    
-    const booking = await Booking.findByIdAndUpdate(
-      bookingId,
-      { status },
-      { new: true }
-    );
-    
+    const booking = await Booking.findByPk(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    booking.status = status;
+    if (status === 'completed') {
+      booking.completedAt = new Date();
+    }
+    await booking.save();
     res.json({ success: true, data: booking });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Add review for provider
-const addProviderReview = async (req, res) => {
+const completeBooking = async (req, res) => {
   try {
-    const { bookingId, rating, review } = req.body;
-    
-    const booking = await Booking.findByIdAndUpdate(
-      bookingId,
-      { 
-        customerRating: rating,
-        customerReview: review,
-        reviewedAt: new Date()
-      },
-      { new: true }
-    );
-    
-    res.json({ success: true, data: booking });
+    const booking = await Booking.findByPk(req.params.bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    if (booking.status !== 'confirmed') {
+      return res.status(400).json({ success: false, message: 'Booking not confirmed yet' });
+    }
+    booking.status = 'completed';
+    booking.completedAt = new Date();
+    await booking.save();
+    res.json({
+      success: true,
+      message: `Service completed! Please pay remaining ${Math.round(booking.remainingAmount)} Br.`,
+      data: { bookingId: booking.id, remainingAmount: booking.remainingAmount }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Cancel booking
 const cancelBooking = async (req, res) => {
   try {
-    const { bookingId } = req.body;
-    
-    const booking = await Booking.findByIdAndUpdate(
-      bookingId,
-      { 
-        status: 'cancelled',
-        cancelledAt: new Date()
-      },
-      { new: true }
-    );
-    
+    const booking = await Booking.findByPk(req.params.bookingId || req.body.bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    booking.status = 'cancelled';
+    await booking.save();
     res.json({ success: true, data: booking });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -139,6 +162,6 @@ module.exports = {
   getUserBookings,
   getProviderBookings,
   updateBookingStatus,
-  addProviderReview,
+  completeBooking,
   cancelBooking
 };

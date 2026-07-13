@@ -1,21 +1,30 @@
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+dotenv.config();
 const User = require('./models/User');
 const Service = require('./models/Service');
 const Doctor = require('./models/Doctor');
-
-dotenv.config();
-
-mongoose.connect('mongodb://127.0.0.1:27017/ethioservice');
+const { sequelize } = require('./config/database');
 
 const seedData = async () => {
   try {
-    // Clear existing data
-    await Service.deleteMany();
-    await Doctor.deleteMany();
+    await sequelize.sync({ force: true });
 
-    // Find or create a provider user
-    let provider = await User.findOne({ role: 'provider' });
+    // Create admin user
+    let admin = await User.findOne({ where: { role: 'admin' } });
+    if (!admin) {
+      admin = await User.create({
+        name: 'Admin User',
+        email: 'admin@ethioservice.com',
+        password: 'admin123',
+        role: 'admin',
+        phone: '0911000000',
+        city: 'Addis Ababa'
+      });
+      console.log('Admin created:', admin.email, '/ password: admin123');
+    }
+
+    // Create a provider user
+    let provider = await User.findOne({ where: { role: 'provider' } });
     if (!provider) {
       provider = await User.create({
         name: 'Tadesse Bekele',
@@ -28,91 +37,87 @@ const seedData = async () => {
       console.log('Provider created:', provider.name);
     }
 
+    // Create a customer user
+    let customer = await User.findOne({ where: { email: 'customer@ethioservice.com' } });
+    if (!customer) {
+      customer = await User.create({
+        name: 'Demo Customer',
+        email: 'customer@ethioservice.com',
+        password: 'customer123',
+        role: 'customer',
+        phone: '0922000000',
+        city: 'Addis Ababa'
+      });
+      console.log('Customer created:', customer.email, '/ password: customer123');
+    }
+
     // Add sample services
     const services = [
       {
         title: 'Emergency Plumber',
         category: 'plumber',
-        description: '24/7 emergency plumbing services in Addis Ababa',
         price: 500,
-        priceUnit: 'hour',
-        city: 'Addis Ababa',
-        provider: provider._id,
-        rating: 4.8
+        rating: 4.8,
+        city: 'Addis Ababa'
       },
       {
         title: 'Certified Electrician',
         category: 'electrician',
-        description: 'Electrical repairs and installation',
         price: 450,
-        priceUnit: 'hour',
-        city: 'Addis Ababa',
-        provider: provider._id,
-        rating: 4.9
+        rating: 4.9,
+        city: 'Addis Ababa'
       },
       {
         title: 'Math Tutoring',
         category: 'tutor',
-        description: 'Expert math tutor for all levels',
         price: 300,
-        priceUnit: 'hour',
-        city: 'Bahir Dar',
-        provider: provider._id,
-        rating: 4.9
+        rating: 4.9,
+        city: 'Bahir Dar'
       },
       {
         title: 'Professional Cleaner',
         category: 'cleaner',
-        description: 'Deep cleaning for homes and offices',
         price: 400,
-        priceUnit: 'hour',
-        city: 'Addis Ababa',
-        provider: provider._id,
-        rating: 4.7
+        rating: 4.7,
+        city: 'Addis Ababa'
       }
     ];
 
-    await Service.insertMany(services);
+    await Service.bulkCreate(services);
     console.log(`✅ Added ${services.length} services`);
 
     // Add sample doctors
     const doctors = [
       {
         name: 'Dr. Tedros Adhanom',
-        specialty: 'general',
         specialtyName: 'General Physician',
         experience: '18 years',
         hospital: 'Black Lion Hospital',
         fee: 800,
         city: 'Addis Ababa',
-        rating: 4.9,
-        avatar: 'https://randomuser.me/api/portraits/men/1.jpg'
+        rating: 4.9
       },
       {
         name: 'Dr. Mekdes Daba',
-        specialty: 'cardiology',
         specialtyName: 'Cardiologist',
         experience: '12 years',
         hospital: 'St. Paul\'s Hospital',
         fee: 1200,
         city: 'Addis Ababa',
-        rating: 4.95,
-        avatar: 'https://randomuser.me/api/portraits/women/1.jpg'
+        rating: 4.95
       },
       {
         name: 'Dr. Atsede Asrat',
-        specialty: 'gynecology',
         specialtyName: 'Gynecologist',
         experience: '15 years',
         hospital: 'Gandhi Hospital',
         fee: 900,
         city: 'Addis Ababa',
-        rating: 4.85,
-        avatar: 'https://randomuser.me/api/portraits/women/2.jpg'
+        rating: 4.85
       }
     ];
 
-    await Doctor.insertMany(doctors);
+    await Doctor.bulkCreate(doctors);
     console.log(`✅ Added ${doctors.length} doctors`);
 
     console.log('🎉 Data seeding completed!');
