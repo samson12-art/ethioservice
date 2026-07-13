@@ -2,7 +2,7 @@ import {
   Home, Wrench, Stethoscope, GraduationCap, MapPin,
   LayoutDashboard, Shield, Star, CreditCard, MessageCircle,
   CalendarCheck, HelpCircle, LogOut,
-  Briefcase, ClipboardList, DollarSign,
+  Briefcase, ClipboardList, DollarSign, AlertTriangle,
 } from "lucide-react";
 
 const userNavItems = [
@@ -16,6 +16,7 @@ const userNavItems = [
   { id: "payments", label: "Payments", icon: CreditCard },
   { id: "messages", label: "Messages", icon: MessageCircle },
   { id: "appointments", label: "Appointments", icon: CalendarCheck },
+  { id: "complaints", label: "Complaints", icon: AlertTriangle },
   { id: "help", label: "Help Center", icon: HelpCircle },
 ];
 
@@ -27,6 +28,7 @@ const providerNavItems = [
   { id: "provider-earnings", label: "Earnings", icon: DollarSign },
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "messages", label: "Messages", icon: MessageCircle },
+  { id: "complaints", label: "Complaints", icon: AlertTriangle },
   { id: "help", label: "Help Center", icon: HelpCircle },
 ];
 
@@ -38,6 +40,7 @@ const adminNavItems = [
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "payments", label: "Payments", icon: CreditCard },
   { id: "messages", label: "Messages", icon: MessageCircle },
+  { id: "admin-complaints", label: "Complaints", icon: AlertTriangle },
   { id: "help", label: "Help Center", icon: HelpCircle },
 ];
 

@@ -20,7 +20,7 @@ export default function ServicesPage({ services, serviceSearchTerm, setServiceSe
       </div>
       <div className="card-grid">
         {filtered.map((service) => (
-          <div key={service._id} className="service-card">
+          <div key={service.id} className="service-card">
             <h3>{service.title}</h3>
             <p className="category">{service.category}</p>
             <p className="price">{service.price} Br</p>

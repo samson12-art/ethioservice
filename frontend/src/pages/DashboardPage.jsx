@@ -56,7 +56,7 @@ export default function DashboardPage({ user, bookings, completeService, openRem
         const progress = ((b.upfrontAmount || 0) / (b.totalPrice || 1)) * 100;
 
         return (
-          <div key={b._id} className="panel">
+          <div key={b.id} className="panel">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
               <div style={{ flex: 1, minWidth: "200px" }}>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" }}>
@@ -73,7 +73,7 @@ export default function DashboardPage({ user, bookings, completeService, openRem
                   </div>
                   <div>
                     <p style={{ fontSize: "12px", marginBottom: "2px" }}>Booking ID</p>
-                    <p style={{ fontWeight: "600", color: "var(--text)", fontFamily: "monospace" }}>#{getShortId(b._id)}</p>
+                    <p style={{ fontWeight: "600", color: "var(--text)", fontFamily: "monospace" }}>#{getShortId(b.id)}</p>
                   </div>
                   <div>
                     <p style={{ fontSize: "12px", marginBottom: "2px" }}>Total</p>
@@ -96,12 +96,12 @@ export default function DashboardPage({ user, bookings, completeService, openRem
               </div>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {b.status === "confirmed" && (
-                  <button onClick={() => completeService(b._id)}>
+                  <button onClick={() => completeService(b.id)}>
                     <CreditCard size={18} /> Mark Completed
                   </button>
                 )}
                 {b.status === "completed" && b.remainingAmount > 0 && (
-                  <button style={{ background: "#f59e0b" }} onClick={() => openRemainingPaymentModal(b._id, b.remainingAmount)}>
+                  <button style={{ background: "#f59e0b" }} onClick={() => openRemainingPaymentModal(b.id, b.remainingAmount)}>
                     <CreditCard size={18} /> Pay {Math.round(b.remainingAmount)} Br
                   </button>
                 )}

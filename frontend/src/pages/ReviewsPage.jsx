@@ -25,10 +25,10 @@ export default function ReviewsPage({ reviews }) {
               </thead>
               <tbody>
                 {reviews.map((r) => (
-                  <tr key={r._id}>
+                  <tr key={r.id}>
                     <td>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</td>
                     <td>{r.comment}</td>
-                    <td>{new Date(r.createdAt || r._id?.toString().slice(0, 8) * 1000).toLocaleDateString()}</td>
+                    <td>{new Date(r.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>

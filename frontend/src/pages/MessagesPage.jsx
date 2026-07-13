@@ -17,7 +17,7 @@ export default function MessagesPage({ messages, chatMessage, setChatMessage, se
           <div className="chat-container">
             <div className="chat-messages">
               {messages.map((m) => (
-                <div key={m._id} className="chat-bubble">
+                <div key={m.id} className="chat-bubble">
                   <strong>{m.senderId?.name || "User"}:</strong> {m.message}
                   <small>{new Date(m.createdAt).toLocaleTimeString()}</small>
                 </div>

@@ -27,6 +27,8 @@ import PaymentsPage from "./pages/PaymentsPage";
 import MessagesPage from "./pages/MessagesPage";
 import AppointmentsPage from "./pages/AppointmentsPage";
 import HelpPage from "./pages/HelpPage";
+import ComplaintsPage from "./pages/ComplaintsPage";
+import AdminComplaintsPage from "./pages/AdminComplaintsPage";
 
 const API = axios.create({ baseURL: "http://localhost:5000/api" });
 API.interceptors.request.use((req) => {
@@ -53,6 +55,8 @@ const pageTitles = {
   messages: "Messages",
   appointments: "Appointments",
   help: "Help Center",
+  complaints: "Complaints",
+  "admin-complaints": "User Complaints",
 };
 
 export default function App() {
@@ -77,6 +81,9 @@ export default function App() {
   const [providerPrice, setProviderPrice] = useState("");
   const [priceUnit, setPriceUnit] = useState("hour");
   const [description, setDescription] = useState("");
+  const [providerAgreement, setProviderAgreement] = useState(false);
+  const [certificateFile, setCertificateFile] = useState(null);
+  const [experienceLetter, setExperienceLetter] = useState(null);
 
   const [doctors, setDoctors] = useState([]);
   const [services, setServices] = useState([]);
@@ -123,6 +130,7 @@ export default function App() {
 
   const [chatMessage, setChatMessage] = useState("");
   const [searchHistory, setSearchHistory] = useState([]);
+  const [complaints, setComplaints] = useState([]);
 
   const isAdmin = user?.role === "admin";
   const primaryColor = "#136f63";
@@ -142,9 +150,11 @@ export default function App() {
       loadReviews();
       loadPayments();
       loadMessages();
+      loadComplaints();
       if (data.user.role === "admin") {
         loadPendingProviders();
         loadAdminStats();
+        loadAllComplaints();
       }
     } catch {
       localStorage.removeItem("token");
@@ -158,8 +168,8 @@ export default function App() {
       setDoctors(data.data || []);
     } catch {
       setDoctors([
-        { _id: "1", name: "Dr. Abeba Tekle", specialtyName: "General Physician", hospital: "Black Lion Hospital", fee: 800, rating: 4.9 },
-        { _id: "2", name: "Dr. Tedros Adhanom", specialtyName: "Cardiologist", hospital: "St. Paul Hospital", fee: 1200, rating: 4.95 },
+        { id: "1", name: "Dr. Abeba Tekle", specialtyName: "General Physician", hospital: "Black Lion Hospital", fee: 800, rating: 4.9 },
+        { id: "2", name: "Dr. Tedros Adhanom", specialtyName: "Cardiologist", hospital: "St. Paul Hospital", fee: 1200, rating: 4.95 },
       ]);
     }
   };
@@ -170,9 +180,9 @@ export default function App() {
       setServices(data.data || []);
     } catch {
       setServices([
-        { _id: "s1", title: "Plumbing Service", category: "plumber", price: 500, rating: 4.8 },
-        { _id: "s2", title: "Electrical Service", category: "electrician", price: 455, rating: 4.9 },
-        { _id: "s3", title: "Cleaning Service", category: "cleaner", price: 400, rating: 4.7 },
+        { id: "s1", title: "Plumbing Service", category: "plumber", price: 500, rating: 4.8 },
+        { id: "s2", title: "Electrical Service", category: "electrician", price: 455, rating: 4.9 },
+        { id: "s3", title: "Cleaning Service", category: "cleaner", price: 400, rating: 4.7 },
       ]);
     }
   };
@@ -183,7 +193,7 @@ export default function App() {
       setTutors(data.data || []);
     } catch {
       setTutors([
-        { _id: "t1", name: "Dr. Alemu Tesfaye", subject: "Mathematics", level: "High School", fee: 400, rating: 4.9, experience: "12 years", city: "Addis Ababa", online: true, inperson: true },
+        { id: "t1", name: "Dr. Alemu Tesfaye", subject: "Mathematics", level: "High School", fee: 400, rating: 4.9, experience: "12 years", city: "Addis Ababa", online: true, inperson: true },
       ]);
     }
   };
@@ -232,6 +242,61 @@ export default function App() {
     } catch {}
   };
 
+  const loadComplaints = async () => {
+    try {
+      const { data } = await API.get("/complaints/my");
+      setComplaints(data.data || []);
+    } catch {}
+  };
+
+  const loadAllComplaints = async () => {
+    try {
+      const { data } = await API.get("/complaints/all");
+      setComplaints(data.data || []);
+    } catch {}
+  };
+
+  const submitComplaint = async (category, subject, description, onSuccess) => {
+    if (!category || !subject || !description) {
+      setMessage("All fields are required");
+      setMessageType("error");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data } = await API.post("/complaints", { category, subject, description });
+      if (data.success) {
+        setMessage("Complaint submitted successfully!");
+        setMessageType("success");
+        loadComplaints();
+        if (onSuccess) onSuccess();
+      }
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to submit complaint");
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const replyToComplaint = async (complaintId, status, adminReply, onSuccess) => {
+    setLoading(true);
+    try {
+      const { data } = await API.put(`/complaints/${complaintId}/reply`, { status, adminReply });
+      if (data.success) {
+        setMessage("Reply sent!");
+        setMessageType("success");
+        loadAllComplaints();
+        if (onSuccess) onSuccess();
+      }
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to send reply");
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -272,12 +337,31 @@ export default function App() {
 
   const handleProviderRegister = async (e) => {
     e.preventDefault();
+    if (!providerAgreement) {
+      setMessage("You must agree to the Provider Agreement before registering");
+      setMessageType("error");
+      return;
+    }
     setLoading(true);
     setMessage("");
     try {
-      const { data } = await API.post("/auth/register-provider", {
-        name, email, password, phone, city, profession, experience,
-        price: providerPrice, priceUnit, description,
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("email", email);
+      formData.append("password", password);
+      formData.append("phone", phone);
+      formData.append("city", city);
+      formData.append("profession", profession);
+      formData.append("experience", experience);
+      formData.append("price", providerPrice);
+      formData.append("priceUnit", priceUnit);
+      formData.append("description", description);
+      formData.append("agreedToTerms", "true");
+      if (certificateFile) formData.append("certificate", certificateFile);
+      if (experienceLetter) formData.append("experienceLetter", experienceLetter);
+
+      const { data } = await API.post("/auth/register-provider", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       localStorage.setItem("token", data.token);
       setToken(data.token);
@@ -386,8 +470,8 @@ export default function App() {
     if (!bookingDate) { setMessage("Please select a date"); return; }
     setLoading(true);
     try {
-      const { data } = await API.post("/bookings/calculate", {
-        serviceType: selectedType, itemId: selectedItem._id,
+      const { data } = await API.post("/bookings", {
+        serviceType: selectedType, itemId: selectedItem.id,
         bookingDate, time: bookingTime, bookingMode,
       });
       if (data.success) {
@@ -476,7 +560,7 @@ export default function App() {
     try {
       const professionalType = selectedReviewItem.specialtyName ? "doctor" : selectedReviewItem.subject ? "tutor" : "service";
       const { data } = await API.post("/reviews", {
-        professionalId: selectedReviewItem._id, professionalType, rating, comment,
+        professionalId: selectedReviewItem.id, professionalType, rating, comment,
       });
       if (data.success) {
         setMessage("Review submitted!");
@@ -583,6 +667,49 @@ export default function App() {
                 <label>Price Unit<select value={priceUnit} onChange={(e) => setPriceUnit(e.target.value)}>
                   <option value="hour">Per Hour</option><option value="day">Per Day</option><option value="fixed">Fixed</option>
                 </select></label>
+
+                <div className="upload-section">
+                  <label>Professional Certificate (Required)
+                    <div className="file-upload-area">
+                      <input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => setCertificateFile(e.target.files[0])} required />
+                      {certificateFile && <span className="file-name">{certificateFile.name}</span>}
+                      {!certificateFile && <span className="file-placeholder">Upload your legal professional certificate (JPG, PNG, or PDF)</span>}
+                    </div>
+                  </label>
+                </div>
+
+                <div className="upload-section">
+                  <label>Experience Letter (Required)
+                    <div className="file-upload-area">
+                      <input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => setExperienceLetter(e.target.files[0])} required />
+                      {experienceLetter && <span className="file-name">{experienceLetter.name}</span>}
+                      {!experienceLetter && <span className="file-placeholder">Upload your experience/employment letter (JPG, PNG, or PDF)</span>}
+                    </div>
+                  </label>
+                </div>
+
+                <div className="agreement-box">
+                  <div className="agreement-header">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <span className="agreement-title">Provider Agreement</span>
+                  </div>
+                  <div className="agreement-text">
+                    <p>By registering as a service provider on <strong>EthioService</strong>, I hereby agree to the following terms and conditions:</p>
+                    <ol>
+                      <li><span className="rule-highlight">Commission Fee:</span> I agree to pay a <strong>5% commission</strong> of all my earnings generated through the EthioService platform.</li>
+                      <li><span className="rule-highlight">Availability:</span> I commit to being <strong>available and responsive</strong> whenever a client contacts me through the platform.</li>
+                      <li><span className="rule-highlight">Honest Service:</span> I will perform all jobs <strong>honestly, professionally, and in real time</strong> as described in each service agreement.</li>
+                      <li><span className="rule-highlight">Legal Certification:</span> I confirm that I hold a <strong>valid and legal certificate</strong> for my profession and have uploaded authentic documentation.</li>
+                      <li><span className="rule-highlight">No Forced Labor:</span> I confirm that my work on this platform is <strong>completely voluntary</strong>. I am not a victim of, nor involved in, any form of forced or compulsory labor.</li>
+                      <li><span className="rule-highlight">Experience Verification:</span> I confirm that the <strong>experience letter</strong> I have uploaded is genuine and accurately represents my professional background.</li>
+                    </ol>
+                  </div>
+                  <label className="agreement-checkbox">
+                    <input type="checkbox" checked={providerAgreement} onChange={(e) => setProviderAgreement(e.target.checked)} required />
+                    <span>I have read, understood, and agree to all the terms stated in the Provider Agreement above</span>
+                  </label>
+                </div>
+
                 {message && <DismissibleAlert message={message} onClose={() => setMessage("")} type={messageType} />}
                 <button type="submit" disabled={loading}>{loading ? "Submitting..." : "Register as Provider"}</button>
               </form>
@@ -671,6 +798,12 @@ export default function App() {
           />
         )}
         {activePage === "appointments" && <AppointmentsPage bookings={bookings} />}
+        {activePage === "complaints" && (
+          <ComplaintsPage complaints={complaints} submitComplaint={submitComplaint} loading={loading} />
+        )}
+        {activePage === "admin-complaints" && isAdmin && (
+          <AdminComplaintsPage complaints={complaints} replyToComplaint={replyToComplaint} loading={loading} />
+        )}
         {activePage === "help" && <HelpPage />}
       </section>
 

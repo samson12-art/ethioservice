@@ -14,7 +14,10 @@ const User = sequelize.define('User', {
   experience: { type: DataTypes.STRING },
   price: { type: DataTypes.FLOAT },
   priceUnit: { type: DataTypes.STRING },
-  description: { type: DataTypes.TEXT }
+  description: { type: DataTypes.TEXT },
+  certificateUrl: { type: DataTypes.STRING },
+  experienceLetterUrl: { type: DataTypes.STRING },
+  agreedToTerms: { type: DataTypes.BOOLEAN, defaultValue: false }
 }, {
   timestamps: true,
   hooks: {

@@ -7,7 +7,9 @@ const Doctor = sequelize.define('Doctor', {
   hospital: { type: DataTypes.STRING },
   fee: { type: DataTypes.FLOAT },
   rating: { type: DataTypes.FLOAT, defaultValue: 4.5 },
-  city: { type: DataTypes.STRING }
+  city: { type: DataTypes.STRING },
+  providerId: { type: DataTypes.STRING },
+  providerName: { type: DataTypes.STRING }
 }, {
   timestamps: true
 });

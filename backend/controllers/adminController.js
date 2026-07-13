@@ -4,6 +4,7 @@ const Payment = require('../models/Payment');
 const Service = require('../models/Service');
 const Doctor = require('../models/Doctor');
 const Tutor = require('../models/Tutor');
+const Complaint = require('../models/Complaint');
 
 const getPendingProviders = async (req, res) => {
   try {
@@ -54,6 +55,8 @@ const getStats = async (req, res) => {
     const totalServices = await Service.count();
     const totalDoctors = await Doctor.count();
     const totalTutors = await Tutor.count();
+    const totalComplaints = await Complaint.count();
+    const pendingComplaints = await Complaint.count({ where: { status: 'pending' } });
 
     const payments = await Payment.findAll();
     const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -70,7 +73,9 @@ const getStats = async (req, res) => {
         totalServices,
         totalDoctors,
         totalTutors,
-        totalRevenue
+        totalRevenue,
+        totalComplaints,
+        pendingComplaints
       }
     });
   } catch (error) {

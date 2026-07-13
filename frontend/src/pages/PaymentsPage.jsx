@@ -26,7 +26,7 @@ export default function PaymentsPage({ payments }) {
               </thead>
               <tbody>
                 {payments.map((p) => (
-                  <tr key={p._id}>
+                  <tr key={p.id}>
                     <td style={{ fontFamily: "monospace" }}>{p.transactionId}</td>
                     <td>{p.amount} Br</td>
                     <td style={{ textTransform: "capitalize" }}>{p.method}</td>

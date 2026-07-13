@@ -37,11 +37,25 @@ const registerCustomer = async (req, res) => {
 
 const registerProvider = async (req, res) => {
   try {
-    const { name, email, password, phone, city, profession, experience, price, priceUnit, description } = req.body;
+    const { name, email, password, phone, city, profession, experience, price, priceUnit, description, agreedToTerms } = req.body;
+
+    if (agreedToTerms !== 'true') {
+      return res.status(400).json({ success: false, message: 'You must agree to the provider terms and conditions' });
+    }
 
     const existing = await User.findOne({ where: { email } });
     if (existing) {
       return res.status(400).json({ success: false, message: 'User already exists' });
+    }
+
+    const certificateUrl = req.files?.certificate ? `/uploads/${req.files.certificate[0].filename}` : null;
+    const experienceLetterUrl = req.files?.experienceLetter ? `/uploads/${req.files.experienceLetter[0].filename}` : null;
+
+    if (!certificateUrl) {
+      return res.status(400).json({ success: false, message: 'Professional certificate is required' });
+    }
+    if (!experienceLetterUrl) {
+      return res.status(400).json({ success: false, message: 'Experience letter is required' });
     }
 
     const user = await User.create({
@@ -56,7 +70,10 @@ const registerProvider = async (req, res) => {
       price,
       priceUnit,
       description,
-      isVerified: false
+      isVerified: false,
+      certificateUrl,
+      experienceLetterUrl,
+      agreedToTerms: true
     });
 
     const token = generateToken(user.id);

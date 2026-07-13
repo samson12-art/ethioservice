@@ -53,7 +53,7 @@ export default function NearbyPage({
       {userLocation && nearbyResults.length > 0 && (
         <div className="card-grid">
           {nearbyResults.map((item) => (
-            <div key={item._id} className="service-card">
+            <div key={item.id} className="service-card">
               <h3>{item.name}</h3>
               <p className="category">{item.category}</p>
               {item.hospital && <p className="meta">🏥 {item.hospital}</p>}

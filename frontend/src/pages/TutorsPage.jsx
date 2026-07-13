@@ -32,7 +32,7 @@ export default function TutorsPage({
       {showTutorList && tutors.length > 0 && (
         <div className="card-grid">
           {tutors.map((tutor) => (
-            <div key={tutor._id} className="service-card">
+            <div key={tutor.id} className="service-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <h3>{tutor.name}</h3>
                 <div>

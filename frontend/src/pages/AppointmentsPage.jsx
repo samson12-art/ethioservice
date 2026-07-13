@@ -26,7 +26,7 @@ export default function AppointmentsPage({ bookings }) {
               </thead>
               <tbody>
                 {bookings.map((b) => (
-                  <tr key={b._id}>
+                  <tr key={b.id}>
                     <td>{b.serviceType}</td>
                     <td>{new Date(b.bookingDate).toLocaleDateString()}</td>
                     <td>{b.time}</td>

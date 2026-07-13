@@ -34,7 +34,7 @@ export default function AdminPage({ adminStats, pendingProviders, verifyProvider
         ) : (
           <div style={{ marginTop: "16px", display: "grid", gap: "14px" }}>
             {pendingProviders.map((p) => (
-              <div key={p._id} className="provider-card">
+              <div key={p.id} className="provider-card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
                   <div>
                     <h3 style={{ marginBottom: "4px" }}>{p.name}</h3>
@@ -44,10 +44,10 @@ export default function AdminPage({ adminStats, pendingProviders, verifyProvider
                     {p.experience && <p className="muted" style={{ fontSize: "14px" }}>📅 {p.experience} years exp</p>}
                   </div>
                   <div style={{ display: "flex", gap: "8px" }}>
-                    <button onClick={() => verifyProvider(p._id, "approved")}>
+                    <button onClick={() => verifyProvider(p.id, "approved")}>
                       <Shield size={18} /> Approve
                     </button>
-                    <button className="danger" onClick={() => verifyProvider(p._id, "rejected")}>
+                    <button className="danger" onClick={() => verifyProvider(p.id, "rejected")}>
                       Reject
                     </button>
                   </div>

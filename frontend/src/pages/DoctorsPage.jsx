@@ -35,7 +35,7 @@ export default function DoctorsPage({ doctors, searchTerm, setSearchTerm, select
       </div>
       <div className="card-grid">
         {filtered.map((doc) => (
-          <div key={doc._id} className="service-card">
+          <div key={doc.id} className="service-card">
             <h3>{doc.name}</h3>
             <p className="category">{doc.specialtyName}</p>
             <p className="meta">🏥 {doc.hospital}</p>

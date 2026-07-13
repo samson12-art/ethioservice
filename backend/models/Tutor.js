@@ -10,7 +10,9 @@ const Tutor = sequelize.define('Tutor', {
   experience: { type: DataTypes.STRING },
   city: { type: DataTypes.STRING },
   online: { type: DataTypes.BOOLEAN, defaultValue: true },
-  inperson: { type: DataTypes.BOOLEAN, defaultValue: true }
+  inperson: { type: DataTypes.BOOLEAN, defaultValue: true },
+  providerId: { type: DataTypes.STRING },
+  providerName: { type: DataTypes.STRING }
 }, {
   timestamps: true
 });
