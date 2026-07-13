@@ -1,0 +1,707 @@
+import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
+import {
+  Home, Stethoscope, GraduationCap, MapPin,
+  LayoutDashboard, Shield, Star, CreditCard, MessageCircle,
+  CalendarCheck, HelpCircle, LogOut, ChevronDown,
+} from "lucide-react";
+import Sidebar from "./components/Sidebar";
+import "./App.css";
+
+import DismissibleAlert from "./components/DismissibleAlert";
+import BookingModal from "./components/BookingModal";
+import ReviewModal from "./components/ReviewModal";
+import PaymentSummaryModal from "./components/PaymentSummaryModal";
+import PaymentMethodModal from "./components/PaymentMethodModal";
+import RemainingPaymentModal from "./components/RemainingPaymentModal";
+
+import HomePage from "./pages/HomePage";
+import ServicesPage from "./pages/ServicesPage";
+import DoctorsPage from "./pages/DoctorsPage";
+import TutorsPage from "./pages/TutorsPage";
+import NearbyPage from "./pages/NearbyPage";
+import DashboardPage from "./pages/DashboardPage";
+import AdminPage from "./pages/AdminPage";
+import ReviewsPage from "./pages/ReviewsPage";
+import PaymentsPage from "./pages/PaymentsPage";
+import MessagesPage from "./pages/MessagesPage";
+import AppointmentsPage from "./pages/AppointmentsPage";
+import HelpPage from "./pages/HelpPage";
+
+const API = axios.create({ baseURL: "http://localhost:5000/api" });
+API.interceptors.request.use((req) => {
+  const token = localStorage.getItem("token");
+  if (token) req.headers.Authorization = `Bearer ${token}`;
+  return req;
+});
+
+
+
+const pageTitles = {
+  home: "Home",
+  services: "Services",
+  doctors: "Doctors",
+  tutors: "Tutors",
+  nearby: "Nearby",
+  dashboard: "My Bookings",
+  "provider-dashboard": "My Dashboard",
+  "provider-bookings": "My Bookings",
+  "provider-earnings": "Earnings",
+  admin: "Admin Panel",
+  reviews: "Reviews",
+  payments: "Payments",
+  messages: "Messages",
+  appointments: "Appointments",
+  help: "Help Center",
+};
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem("token") || "");
+  const [activePage, setActivePage] = useState("home");
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("error");
+  const [loading, setLoading] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("Addis Ababa");
+  const [showLogin, setShowLogin] = useState(true);
+  const [showProviderForm, setShowProviderForm] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+
+  const [profession, setProfession] = useState("");
+  const [experience, setExperience] = useState("");
+  const [providerPrice, setProviderPrice] = useState("");
+  const [priceUnit, setPriceUnit] = useState("hour");
+  const [description, setDescription] = useState("");
+
+  const [doctors, setDoctors] = useState([]);
+  const [services, setServices] = useState([]);
+  const [tutors, setTutors] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [pendingProviders, setPendingProviders] = useState([]);
+  const [adminStats, setAdminStats] = useState(null);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [serviceSearchTerm, setServiceSearchTerm] = useState("");
+  const [selectedSpecialty, setSelectedSpecialty] = useState("All");
+  const [heroSearch, setHeroSearch] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("");
+  const [showTutorList, setShowTutorList] = useState(false);
+  const [loadingTutors, setLoadingTutors] = useState(false);
+
+  const [userLocation, setUserLocation] = useState(null);
+  const [nearbyResults, setNearbyResults] = useState([]);
+  const [nearbyRadius, setNearbyRadius] = useState(10);
+  const [nearbyType, setNearbyType] = useState("all");
+  const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedType, setSelectedType] = useState(null);
+  const [bookingDate, setBookingDate] = useState("");
+  const [bookingTime, setBookingTime] = useState("09:00");
+  const [bookingMode, setBookingMode] = useState("online");
+
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedReviewItem, setSelectedReviewItem] = useState(null);
+
+  const [showPaymentSummaryModal, setShowPaymentSummaryModal] = useState(false);
+  const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
+  const [showRemainingPaymentModal, setShowRemainingPaymentModal] = useState(false);
+  const [paymentData, setPaymentData] = useState(null);
+  const [remainingPaymentData, setRemainingPaymentData] = useState(null);
+  const [tempBookingId, setTempBookingId] = useState(null);
+
+  const [chatMessage, setChatMessage] = useState("");
+  const [searchHistory, setSearchHistory] = useState([]);
+
+  const isAdmin = user?.role === "admin";
+  const primaryColor = "#136f63";
+
+  useEffect(() => {
+    if (token) loadUser();
+    loadDoctors();
+    loadServices();
+    loadTutors();
+  }, []);
+
+  const loadUser = async () => {
+    try {
+      const { data } = await API.get("/auth/me");
+      setUser(data.user);
+      loadBookings();
+      loadReviews();
+      loadPayments();
+      loadMessages();
+      if (data.user.role === "admin") {
+        loadPendingProviders();
+        loadAdminStats();
+      }
+    } catch {
+      localStorage.removeItem("token");
+      setToken("");
+    }
+  };
+
+  const loadDoctors = async () => {
+    try {
+      const { data } = await API.get("/services/doctors");
+      setDoctors(data.data || []);
+    } catch {
+      setDoctors([
+        { _id: "1", name: "Dr. Abeba Tekle", specialtyName: "General Physician", hospital: "Black Lion Hospital", fee: 800, rating: 4.9 },
+        { _id: "2", name: "Dr. Tedros Adhanom", specialtyName: "Cardiologist", hospital: "St. Paul Hospital", fee: 1200, rating: 4.95 },
+      ]);
+    }
+  };
+
+  const loadServices = async () => {
+    try {
+      const { data } = await API.get("/services");
+      setServices(data.data || []);
+    } catch {
+      setServices([
+        { _id: "s1", title: "Plumbing Service", category: "plumber", price: 500, rating: 4.8 },
+        { _id: "s2", title: "Electrical Service", category: "electrician", price: 455, rating: 4.9 },
+        { _id: "s3", title: "Cleaning Service", category: "cleaner", price: 400, rating: 4.7 },
+      ]);
+    }
+  };
+
+  const loadTutors = async () => {
+    try {
+      const { data } = await API.get("/tutors");
+      setTutors(data.data || []);
+    } catch {
+      setTutors([
+        { _id: "t1", name: "Dr. Alemu Tesfaye", subject: "Mathematics", level: "High School", fee: 400, rating: 4.9, experience: "12 years", city: "Addis Ababa", online: true, inperson: true },
+      ]);
+    }
+  };
+
+  const loadBookings = async () => {
+    try {
+      const { data } = await API.get("/bookings/my-bookings");
+      setBookings(data.data || []);
+    } catch {
+      setBookings([]);
+    }
+  };
+
+  const loadReviews = async () => {
+    try {
+      const { data } = await API.get("/reviews/my-reviews");
+      setReviews(data.data || []);
+    } catch {}
+  };
+
+  const loadPayments = async () => {
+    try {
+      const { data } = await API.get("/payments/history");
+      setPayments(data.data || []);
+    } catch {}
+  };
+
+  const loadMessages = async () => {
+    try {
+      const { data } = await API.get("/messages/conversations");
+      setMessages(data.data || []);
+    } catch {}
+  };
+
+  const loadPendingProviders = async () => {
+    try {
+      const { data } = await API.get("/admin/pending-providers");
+      setPendingProviders(data.data || []);
+    } catch {}
+  };
+
+  const loadAdminStats = async () => {
+    try {
+      const { data } = await API.get("/admin/stats");
+      setAdminStats(data.data);
+    } catch {}
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+    try {
+      const { data } = await API.post("/auth/login", { email, password });
+      localStorage.setItem("token", data.token);
+      setToken(data.token);
+      setUser(data.user);
+      setMessage("Login successful!");
+      setMessageType("success");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Login failed");
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+    try {
+      const { data } = await API.post("/auth/register", { name, email, password, phone, city });
+      localStorage.setItem("token", data.token);
+      setToken(data.token);
+      setUser(data.user);
+      setMessage("Registration successful!");
+      setMessageType("success");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Registration failed");
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProviderRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+    try {
+      const { data } = await API.post("/auth/register-provider", {
+        name, email, password, phone, city, profession, experience,
+        price: providerPrice, priceUnit, description,
+      });
+      localStorage.setItem("token", data.token);
+      setToken(data.token);
+      setUser(data.user);
+      setMessage("Provider registration submitted for review!");
+      setMessageType("success");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Registration failed");
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setToken("");
+    setUser(null);
+    setActivePage("home");
+  };
+
+  const handleHeroSearch = () => {
+    if (heroSearch) {
+      setServiceSearchTerm(heroSearch);
+      setActivePage("services");
+    }
+  };
+
+  const searchTutors = async () => {
+    if (!selectedSubject) { setMessage("Please select a subject"); return; }
+    setLoadingTutors(true);
+    try {
+      let url = `/tutors?subject=${encodeURIComponent(selectedSubject)}`;
+      if (selectedLevel) url += `&level=${encodeURIComponent(selectedLevel)}`;
+      const { data } = await API.get(url);
+      setTutors(data.data || []);
+      setShowTutorList(true);
+    } catch {
+      setMessage("Failed to load tutors");
+    } finally {
+      setLoadingTutors(false);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!chatMessage.trim()) return;
+    try {
+      await API.post("/messages/send", { receiverId: null, message: chatMessage });
+      setChatMessage("");
+      loadMessages();
+      setMessage("Message sent!");
+      setMessageType("success");
+    } catch {
+      setMessage("Failed to send message");
+    }
+  };
+
+  const getUserLocationAndSearch = () => {
+    setNearbyLoading(true);
+    setLocationError(null);
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation not supported");
+      setNearbyLoading(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        try {
+          const { data } = await API.get(`/nearby?lat=${latitude}&lng=${longitude}&radius=${nearbyRadius}&type=${nearbyType}`);
+          if (data.success) setNearbyResults(data.data);
+        } catch {
+          setMessage("Error finding nearby services");
+        } finally {
+          setNearbyLoading(false);
+        }
+      },
+      () => { setLocationError("Please enable location access"); setNearbyLoading(false); }
+    );
+  };
+
+  const searchNearby = async (lat, lng, radius, type) => {
+    setNearbyLoading(true);
+    try {
+      const { data } = await API.get(`/nearby?lat=${lat}&lng=${lng}&radius=${radius}&type=${type}`);
+      if (data.success) setNearbyResults(data.data);
+    } catch {
+      setMessage("Error finding nearby services");
+    } finally {
+      setNearbyLoading(false);
+    }
+  };
+
+  const openBookingModal = (type, item) => {
+    if (!user) { setMessage("Please login first"); return; }
+    setSelectedType(type);
+    setSelectedItem(item);
+    setBookingDate("");
+    setBookingTime("09:00");
+    setBookingMode(item.online ? "online" : "inperson");
+    setShowBookingModal(true);
+  };
+
+  const confirmBooking = async () => {
+    if (!bookingDate) { setMessage("Please select a date"); return; }
+    setLoading(true);
+    try {
+      const { data } = await API.post("/bookings/calculate", {
+        serviceType: selectedType, itemId: selectedItem._id,
+        bookingDate, time: bookingTime, bookingMode,
+      });
+      if (data.success) {
+        setPaymentData(data.data);
+        setTempBookingId(data.data.bookingId);
+        setShowPaymentSummaryModal(true);
+        setShowBookingModal(false);
+      }
+    } catch {
+      setMessage("Failed to create booking");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePayNow = () => {
+    setShowPaymentSummaryModal(false);
+    setShowPaymentMethodModal(true);
+  };
+
+  const processUpfrontPayment = async (method, phoneNumber, emailAddress) => {
+    try {
+      const { data } = await API.post("/payments/initiate", {
+        bookingId: tempBookingId, method, phoneNumber, email: emailAddress,
+      });
+      if (data.success) {
+        setMessage(`Payment successful! Transaction: ${data.data.transactionId}`);
+        setMessageType("success");
+        await loadBookings();
+        setShowPaymentMethodModal(false);
+        setPaymentData(null);
+      }
+    } catch {
+      setMessage("Payment failed. Please try again.");
+    }
+  };
+
+  const completeService = async (bookingId) => {
+    if (!window.confirm("Has the service been completed?")) return;
+    setLoading(true);
+    try {
+      const { data } = await API.post(`/bookings/complete/${bookingId}`);
+      if (data.success) {
+        setMessage(data.message);
+        setMessageType("success");
+        await loadBookings();
+      }
+    } catch {
+      setMessage("Failed to complete service");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openRemainingPaymentModal = (bookingId, remainingAmount) => {
+    setRemainingPaymentData({ bookingId, remainingAmount });
+    setShowRemainingPaymentModal(true);
+  };
+
+  const processRemainingPayment = async (method, phoneNumber, emailAddress) => {
+    try {
+      const { data } = await API.post("/payments/remaining", {
+        bookingId: remainingPaymentData.bookingId, method, phoneNumber, email: emailAddress,
+      });
+      if (data.success) {
+        setMessage(data.message);
+        setMessageType("success");
+        await loadBookings();
+        setShowRemainingPaymentModal(false);
+        setRemainingPaymentData(null);
+      }
+    } catch {
+      setMessage("Payment failed");
+    }
+  };
+
+  const openReviewModal = (item) => {
+    if (!user) { setMessage("Please login first"); return; }
+    setSelectedReviewItem(item);
+    setShowReviewModal(true);
+  };
+
+  const submitReview = async (rating, comment) => {
+    if (!comment.trim()) { setMessage("Please write a review"); return; }
+    setLoading(true);
+    try {
+      const professionalType = selectedReviewItem.specialtyName ? "doctor" : selectedReviewItem.subject ? "tutor" : "service";
+      const { data } = await API.post("/reviews", {
+        professionalId: selectedReviewItem._id, professionalType, rating, comment,
+      });
+      if (data.success) {
+        setMessage("Review submitted!");
+        setMessageType("success");
+        setShowReviewModal(false);
+        await loadReviews();
+      }
+    } catch {
+      setMessage("Failed to submit review");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyProvider = async (providerId, status) => {
+    try {
+      await API.put(`/admin/verify-provider/${providerId}`, { status });
+      setMessage(`Provider ${status}!`);
+      setMessageType("success");
+      loadPendingProviders();
+      loadAdminStats();
+    } catch {
+      setMessage("Failed to update provider");
+    }
+  };
+
+  const getTodayDate = () => {
+    const t = new Date();
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+  };
+
+  if (!token) {
+    const professionsList = ["Plumber", "Electrician", "Cleaner", "Tutor", "Painter", "Mechanic", "Driver", "Cook"];
+    return (
+      <main className="auth-page">
+        <section className="auth-panel">
+          <div className="brand-mark" style={{ width: "58px", height: "58px", borderRadius: "8px", background: "#e8f2ef", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: "28px" }}>🇪🇹</span>
+          </div>
+          <h1>EthioService</h1>
+          {!showProviderForm ? (
+            showLogin ? (
+              <>
+                <p className="muted">Sign in to your account.</p>
+                <form onSubmit={handleLogin} className="form-stack">
+                  <label>
+                    Email
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  </label>
+                  <label>
+                    <span className="field-heading">
+                      Password
+                    </span>
+                    <span className="password-field">
+                      <input type={showLoginPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required />
+                      <button type="button" className="icon-button" onClick={() => setShowLoginPassword(!showLoginPassword)}>
+                        {showLoginPassword ? "🙈" : "👁"}
+                      </button>
+                    </span>
+                  </label>
+                  {message && <DismissibleAlert message={message} onClose={() => setMessage("")} type={messageType} />}
+                  <button type="submit" disabled={loading}>{loading ? "Please wait" : "Login"}</button>
+                </form>
+                <button className="text-button" onClick={() => { setShowLogin(false); setMessage(""); }}>Sign Up</button>
+                <button className="text-button" onClick={() => { setShowProviderForm(true); setMessage(""); }}>Become a Provider →</button>
+              </>
+            ) : (
+              <>
+                <p className="muted">Create a new account.</p>
+                <form onSubmit={handleRegister} className="form-stack">
+                  <label>Full Name<input type="text" value={name} onChange={(e) => setName(e.target.value)} required /></label>
+                  <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+                  <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
+                  <label>Phone<input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} /></label>
+                  <label>City<select value={city} onChange={(e) => setCity(e.target.value)}>
+                    <option>Addis Ababa</option><option>Bahir Dar</option><option>Gondar</option>
+                    <option>Hawassa</option><option>Dire Dawa</option><option>Mekelle</option>
+                  </select></label>
+                  {message && <DismissibleAlert message={message} onClose={() => setMessage("")} type={messageType} />}
+                  <button type="submit" disabled={loading}>{loading ? "Creating..." : "Sign Up"}</button>
+                </form>
+                <button className="text-button" onClick={() => { setShowLogin(true); setMessage(""); }}>Login</button>
+                <button className="text-button" onClick={() => { setShowProviderForm(true); setMessage(""); }}>Become a Provider →</button>
+              </>
+            )
+          ) : (
+            <>
+              <p className="muted">Register as a service provider.</p>
+              <form onSubmit={handleProviderRegister} className="form-stack">
+                <label>Full Name<input type="text" value={name} onChange={(e) => setName(e.target.value)} required /></label>
+                <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+                <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
+                <label>Phone<input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required /></label>
+                <label>City<select value={city} onChange={(e) => setCity(e.target.value)}>
+                  <option>Addis Ababa</option><option>Bahir Dar</option><option>Gondar</option>
+                </select></label>
+                <label>Profession<select value={profession} onChange={(e) => setProfession(e.target.value)} required>
+                  <option value="">Select Profession</option>
+                  {professionsList.map((p) => <option key={p}>{p}</option>)}
+                </select></label>
+                <label>Experience<input type="text" placeholder="Years" value={experience} onChange={(e) => setExperience(e.target.value)} required /></label>
+                <label>Description<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows="2" /></label>
+                <label>Price (Birr)<input type="number" value={providerPrice} onChange={(e) => setProviderPrice(e.target.value)} required /></label>
+                <label>Price Unit<select value={priceUnit} onChange={(e) => setPriceUnit(e.target.value)}>
+                  <option value="hour">Per Hour</option><option value="day">Per Day</option><option value="fixed">Fixed</option>
+                </select></label>
+                {message && <DismissibleAlert message={message} onClose={() => setMessage("")} type={messageType} />}
+                <button type="submit" disabled={loading}>{loading ? "Submitting..." : "Register as Provider"}</button>
+              </form>
+              <button className="text-button" onClick={() => { setShowProviderForm(false); setMessage(""); }}>Back to Login</button>
+            </>
+          )}
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="app-shell">
+      <Sidebar user={user} activePage={activePage} setActivePage={setActivePage} onLogout={handleLogout} />
+
+      <section className="workspace">
+        <header className="topbar">
+          <h1>{pageTitles[activePage] || "EthioService"}</h1>
+          <div className="user-pill">
+            <span>{user?.name}</span>
+            <strong>{user?.role}</strong>
+          </div>
+        </header>
+
+        {message && <DismissibleAlert message={message} onClose={() => setMessage("")} wide type={messageType} />}
+
+        {activePage === "home" && (
+          <HomePage
+            heroSearch={heroSearch} setHeroSearch={setHeroSearch}
+            onSearch={handleHeroSearch} setActivePage={setActivePage}
+          />
+        )}
+        {activePage === "services" && (
+          <ServicesPage
+            services={services} serviceSearchTerm={serviceSearchTerm}
+            setServiceSearchTerm={setServiceSearchTerm}
+            openBookingModal={openBookingModal} openReviewModal={openReviewModal}
+          />
+        )}
+        {activePage === "doctors" && (
+          <DoctorsPage
+            doctors={doctors} searchTerm={searchTerm} setSearchTerm={setSearchTerm}
+            selectedSpecialty={selectedSpecialty} setSelectedSpecialty={setSelectedSpecialty}
+            openBookingModal={openBookingModal} openReviewModal={openReviewModal}
+          />
+        )}
+        {activePage === "tutors" && (
+          <TutorsPage
+            tutors={tutors} selectedSubject={selectedSubject} setSelectedSubject={setSelectedSubject}
+            selectedLevel={selectedLevel} setSelectedLevel={setSelectedLevel}
+            searchTutors={searchTutors} loadingTutors={loadingTutors}
+            showTutorList={showTutorList} openBookingModal={openBookingModal}
+            openReviewModal={openReviewModal}
+          />
+        )}
+        {activePage === "nearby" && (
+          <NearbyPage
+            userLocation={userLocation} nearbyResults={nearbyResults}
+            nearbyRadius={nearbyRadius} setNearbyRadius={setNearbyRadius}
+            nearbyType={nearbyType} setNearbyType={setNearbyType}
+            nearbyLoading={nearbyLoading} locationError={locationError}
+            getUserLocationAndSearch={getUserLocationAndSearch}
+            searchNearby={searchNearby} openBookingModal={openBookingModal}
+            openReviewModal={openReviewModal}
+          />
+        )}
+        {activePage === "dashboard" && (
+          <DashboardPage
+            user={user} bookings={bookings}
+            completeService={completeService}
+            openRemainingPaymentModal={openRemainingPaymentModal}
+          />
+        )}
+        {activePage === "admin" && isAdmin && (
+          <AdminPage
+            adminStats={adminStats} pendingProviders={pendingProviders}
+            verifyProvider={verifyProvider}
+          />
+        )}
+        {activePage === "reviews" && <ReviewsPage reviews={reviews} />}
+        {activePage === "payments" && <PaymentsPage payments={payments} />}
+        {activePage === "messages" && (
+          <MessagesPage
+            messages={messages} chatMessage={chatMessage}
+            setChatMessage={setChatMessage} sendMessage={sendMessage}
+          />
+        )}
+        {activePage === "appointments" && <AppointmentsPage bookings={bookings} />}
+        {activePage === "help" && <HelpPage />}
+      </section>
+
+      <BookingModal
+        show={showBookingModal} item={selectedItem} type={selectedType}
+        onClose={() => setShowBookingModal(false)}
+        bookingDate={bookingDate} setBookingDate={setBookingDate}
+        bookingTime={bookingTime} setBookingTime={setBookingTime}
+        bookingMode={bookingMode} setBookingMode={setBookingMode}
+        onConfirm={confirmBooking} loading={loading} getTodayDate={getTodayDate}
+      />
+      <ReviewModal
+        show={showReviewModal} item={selectedReviewItem}
+        onClose={() => setShowReviewModal(false)}
+        onSubmit={submitReview} loading={loading}
+      />
+      <PaymentSummaryModal
+        show={showPaymentSummaryModal} paymentData={paymentData}
+        onPayNow={handlePayNow} onClose={() => setShowPaymentSummaryModal(false)}
+      />
+      <PaymentMethodModal
+        show={showPaymentMethodModal} paymentData={paymentData}
+        onProcess={processUpfrontPayment}
+        onClose={() => { setShowPaymentMethodModal(false); setPaymentData(null); }}
+        onBack={() => { setShowPaymentMethodModal(false); setShowPaymentSummaryModal(true); }}
+      />
+      <RemainingPaymentModal
+        show={showRemainingPaymentModal} remainingPaymentData={remainingPaymentData}
+        onProcess={processRemainingPayment}
+        onClose={() => { setShowRemainingPaymentModal(false); setRemainingPaymentData(null); }}
+      />
+    </main>
+  );
+}
