@@ -2,11 +2,13 @@ const express = require('express');
 const { protect, authorize } = require('../middleware/auth');
 const Review = require('../models/Review');
 const Service = require('../models/Service');
-const Booking = require('../models/Booking');
+const Doctor = require('../models/Doctor');
+const Tutor = require('../models/Tutor');
+const { reviewValidation } = require('../middleware/validation');
 
 const router = express.Router();
 
-router.post('/', protect, async (req, res) => {
+router.post('/', protect, reviewValidation, async (req, res) => {
   try {
     const { professionalId, professionalType, rating, comment } = req.body;
 
@@ -18,6 +20,25 @@ router.post('/', protect, async (req, res) => {
       rating,
       comment
     });
+
+    // Update provider's average rating
+    const reviews = await Review.findAll({ where: { professionalId } });
+    if (reviews.length > 0) {
+      const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+      const rounded = parseFloat(avgRating.toFixed(1));
+
+      try {
+        if (professionalType === 'service') {
+          await Service.update({ rating: rounded }, { where: { id: professionalId } });
+        } else if (professionalType === 'doctor') {
+          await Doctor.update({ rating: rounded }, { where: { id: professionalId } });
+        } else if (professionalType === 'tutor') {
+          await Tutor.update({ rating: rounded }, { where: { id: professionalId } });
+        }
+      } catch (e) {
+        // Best-effort rating update
+      }
+    }
 
     res.status(201).json({ success: true, data: review });
   } catch (error) {

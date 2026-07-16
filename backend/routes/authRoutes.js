@@ -1,8 +1,9 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
 const { registerCustomer, registerProvider, login, getMe } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
+const { registerValidation, loginValidation } = require('../middleware/validation');
+const multer = require('multer');
+const path = require('path');
 
 const router = express.Router();
 
@@ -31,12 +32,12 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-router.post('/register', registerCustomer);
+router.post('/register', registerValidation, registerCustomer);
 router.post('/register-provider', upload.fields([
   { name: 'certificate', maxCount: 1 },
   { name: 'experienceLetter', maxCount: 1 }
 ]), registerProvider);
-router.post('/login', login);
+router.post('/login', loginValidation, login);
 router.get('/me', protect, getMe);
 
 module.exports = router;

@@ -2,8 +2,9 @@ import {
   Home, Wrench, Stethoscope, GraduationCap, MapPin,
   LayoutDashboard, Shield, Star, CreditCard, MessageCircle,
   CalendarCheck, HelpCircle, LogOut,
-  Briefcase, ClipboardList, DollarSign, AlertTriangle,
+  Briefcase, ClipboardList, DollarSign, AlertTriangle, Sun, Moon,
 } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 const userNavItems = [
   { id: "home", label: "Home", icon: Home },
@@ -22,7 +23,7 @@ const userNavItems = [
 
 const providerNavItems = [
   { id: "home", label: "Home", icon: Home },
-  { id: "dashboard", label: "My Dashboard", icon: LayoutDashboard },
+  { id: "provider-dashboard", label: "My Dashboard", icon: LayoutDashboard },
   { id: "provider-bookings", label: "Bookings", icon: ClipboardList },
   { id: "services", label: "My Services", icon: Wrench },
   { id: "provider-earnings", label: "Earnings", icon: DollarSign },
@@ -58,11 +59,11 @@ function getNavItems(role) {
 export default function Sidebar({ user, activePage, setActivePage, onLogout }) {
   const role = user?.role || "user";
   const items = getNavItems(role);
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <aside className="sidebar">
       <div className="brand-row">
-        <span>🇪🇹</span>
         <span>EthioService</span>
       </div>
       <nav>
@@ -76,9 +77,24 @@ export default function Sidebar({ user, activePage, setActivePage, onLogout }) {
           </button>
         ))}
       </nav>
-      <button onClick={onLogout} className="logout">
-        <LogOut size={18} /> Logout
-      </button>
+      <div style={{ display: "grid", gap: "6px", marginTop: "auto" }}>
+        <button
+          onClick={toggleTheme}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "flex-start",
+            gap: "10px", padding: "0 12px", minHeight: "42px",
+            background: "transparent", color: "#dce9e5", border: "none",
+            borderRadius: "8px", cursor: "pointer", fontWeight: 700, fontSize: "14px",
+            width: "100%", fontFamily: "inherit"
+          }}
+        >
+          {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          {theme === "light" ? "Dark Mode" : "Light Mode"}
+        </button>
+        <button onClick={onLogout} className="logout">
+          <LogOut size={18} /> Logout
+        </button>
+      </div>
     </aside>
   );
 }

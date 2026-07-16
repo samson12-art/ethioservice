@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ethioservice-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ethioservice}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-ethioservice}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ethioservice-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-ethioservice}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-strong-random-secret}
+      JWT_EXPIRE: 30d
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      CHAPA_SECRET_KEY: ${CHAPA_SECRET_KEY:-}
+      CHAPA_PUBLIC_KEY: ${CHAPA_PUBLIC_KEY:-}
+      CHAPA_BASE_URL: ${CHAPA_BASE_URL:-https://api.chapa.co}
+      TELEBIRR_APP_ID: ${TELEBIRR_APP_ID:-}
+      TELEBIRR_APP_KEY: ${TELEBIRR_APP_KEY:-}
+    ports:
+      - "5000:5000"
+    volumes:
+      - upload_data:/app/uploads
+      - log_data:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    container_name: ethioservice-nginx
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+
+volumes:
+  postgres_data:
+  upload_data:
+  log_data:

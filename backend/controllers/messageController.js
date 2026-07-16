@@ -6,10 +6,27 @@ const sendMessage = async (req, res) => {
   try {
     const { receiverId, message } = req.body;
 
+    if (!receiverId) {
+      return res.status(400).json({ success: false, message: 'Receiver ID is required' });
+    }
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ success: false, message: 'Message cannot be empty' });
+    }
+
+    if (receiverId.toString() === req.user.id.toString()) {
+      return res.status(400).json({ success: false, message: 'Cannot send message to yourself' });
+    }
+
+    const receiver = await User.findByPk(receiverId);
+    if (!receiver) {
+      return res.status(404).json({ success: false, message: 'Receiver not found' });
+    }
+
     const newMessage = await Message.create({
       senderId: req.user.id.toString(),
       receiverId: receiverId.toString(),
-      message
+      message: message.trim()
     });
 
     res.status(201).json({ success: true, data: newMessage });
@@ -88,6 +105,9 @@ const getMessages = async (req, res) => {
 const markAsRead = async (req, res) => {
   try {
     const { senderId } = req.body;
+    if (!senderId) {
+      return res.status(400).json({ success: false, message: 'Sender ID is required' });
+    }
     await Message.update(
       { read: true },
       { where: { senderId, receiverId: req.user.id.toString(), read: false } }

@@ -6,5 +6,11 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 .env
 backend/.env
+frontend/.env
 .DS_Store
 *.log
+backend/logs/
+backend/migrations/*.js
+*.sqlite
+.env.local
+.env.production

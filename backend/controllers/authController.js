@@ -2,12 +2,25 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'ethioservice_secret_key_2024', { expiresIn: '30d' });
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '30d' });
 };
 
 const registerCustomer = async (req, res) => {
   try {
     const { name, email, password, phone, city } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: 'Invalid email format' });
+    }
 
     const existing = await User.findOne({ where: { email } });
     if (existing) {
@@ -39,8 +52,21 @@ const registerProvider = async (req, res) => {
   try {
     const { name, email, password, phone, city, profession, experience, price, priceUnit, description, agreedToTerms } = req.body;
 
+    if (!name || !email || !password || !phone || !profession || !experience || !price) {
+      return res.status(400).json({ success: false, message: 'All required fields must be provided' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+
     if (agreedToTerms !== 'true') {
       return res.status(400).json({ success: false, message: 'You must agree to the provider terms and conditions' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: 'Invalid email format' });
     }
 
     const existing = await User.findOne({ where: { email } });
@@ -91,6 +117,10 @@ const registerProvider = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
+    }
 
     const user = await User.findOne({ where: { email } });
     if (!user || !(await user.comparePassword(password))) {

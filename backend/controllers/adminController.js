@@ -24,8 +24,30 @@ const verifyProvider = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'Provider not found' });
     }
+    if (user.role !== 'provider') {
+      return res.status(400).json({ success: false, message: 'User is not a provider' });
+    }
     await user.update({ isVerified: true });
-    res.json({ success: true, message: 'Provider verified' });
+
+    // Auto-create service listing from provider profile
+    const existingService = await Service.findOne({
+      where: { providerId: user.id.toString() }
+    });
+
+    if (!existingService && user.profession) {
+      await Service.create({
+        title: `${user.profession} Service by ${user.name}`,
+        category: user.profession.toLowerCase(),
+        price: user.price || 0,
+        rating: 4.5,
+        city: user.city || 'Addis Ababa',
+        providerId: user.id.toString(),
+        providerName: user.name,
+        description: user.description || `${user.profession} with ${user.experience || 'N/A'} experience`
+      });
+    }
+
+    res.json({ success: true, message: 'Provider verified and listed in services' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -38,7 +60,11 @@ const rejectProvider = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Provider not found' });
     }
     await user.update({ isVerified: false });
-    res.json({ success: true, message: 'Provider rejected' });
+
+    // Remove their service listing
+    await Service.destroy({ where: { providerId: user.id.toString() } });
+
+    res.json({ success: true, message: 'Provider rejected and service removed' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

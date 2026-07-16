@@ -1,14 +1,15 @@
 const express = require('express');
-const { processPayment, processRemainingPayment, getPaymentHistory, getPaymentStatus } = require('../controllers/paymentController');
+const { initiatePayment, processRemainingPayment, getPaymentHistory, getPaymentStatus } = require('../controllers/paymentController');
 const { protect, authorize } = require('../middleware/auth');
+const { paymentValidation } = require('../middleware/validation');
 const Booking = require('../models/Booking');
 
 const router = express.Router();
 
 router.use(protect);
 
-router.post('/initiate', processPayment);
-router.post('/remaining', processRemainingPayment);
+router.post('/initiate', paymentValidation, initiatePayment);
+router.post('/remaining', paymentValidation, processRemainingPayment);
 router.get('/history', getPaymentHistory);
 router.get('/status/:bookingId', getPaymentStatus);
 

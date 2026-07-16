@@ -65,3 +65,136 @@ select,
 textarea {
   font-family: inherit;
 }
+
+/* Dark mode */
+[data-theme="dark"] {
+  --bg: #0f1714;
+  --surface: #1a2621;
+  --text: #e8f0ec;
+  --muted: #8a9e97;
+  --border: #2d3d37;
+  --sidebar-bg: #0a1210;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: #0f1714;
+  border-color: #2d3d37;
+  color: #e8f0ec;
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(19, 111, 99, 0.2);
+}
+
+[data-theme="dark"] .panel,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .service-card,
+[data-theme="dark"] .booking-card,
+[data-theme="dark"] .complaint-card,
+[data-theme="dark"] .provider-card {
+  background: #1a2621;
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] th {
+  background: #1a2621;
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] td {
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] tbody tr:hover {
+  background: #1f2e28;
+}
+
+[data-theme="dark"] .auth-panel {
+  background: #1a2621;
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] .badge {
+  background: #1f2e28;
+}
+
+[data-theme="dark"] .specialty-bar button,
+[data-theme="dark"] .complaint-filter-btn {
+  background: #1f2e28;
+  color: #e8f0ec;
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] .hint-list span,
+[data-theme="dark"] .compact-list span {
+  background: #1f2e28;
+}
+
+[data-theme="dark"] .secondary,
+[data-theme="dark"] .logout,
+[data-theme="dark"] .link-button {
+  background: #1f2e28;
+  color: #e8f0ec;
+}
+
+[data-theme="dark"] nav button:hover,
+[data-theme="dark"] nav button.active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .icon-button:hover {
+  background: #1f2e28;
+}
+
+[data-theme="dark"] .user-pill {
+  background: #1a2621;
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] .chat-bubble {
+  background: #1a2621;
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] .payment-option {
+  background: #1f2e28;
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] .faq-item {
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] .faq-item button:hover {
+  background: #1f2e28;
+}
+
+[data-theme="dark"] input:disabled {
+  background: #0f1714;
+}
+
+[data-theme="dark"] .details div {
+  background: #0f1714;
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] .agreement-checkbox {
+  background: #1f2e28;
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] .file-upload-area {
+  background: #0f1714;
+  border-color: #2d3d37;
+}
+
+[data-theme="dark"] .complaint-form-box,
+[data-theme="dark"] .complaint-reply-form {
+  background: #1a2621;
+  border-color: #2d3d37;
+}

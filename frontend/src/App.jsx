@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
-import {
-  Home, Stethoscope, GraduationCap, MapPin,
-  LayoutDashboard, Shield, Star, CreditCard, MessageCircle,
-  CalendarCheck, HelpCircle, LogOut, ChevronDown,
-} from "lucide-react";
+import { useAuth } from "./context/AuthContext";
+import API from "./services/api";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 
@@ -29,13 +25,9 @@ import AppointmentsPage from "./pages/AppointmentsPage";
 import HelpPage from "./pages/HelpPage";
 import ComplaintsPage from "./pages/ComplaintsPage";
 import AdminComplaintsPage from "./pages/AdminComplaintsPage";
-
-const API = axios.create({ baseURL: "http://localhost:5000/api" });
-API.interceptors.request.use((req) => {
-  const token = localStorage.getItem("token");
-  if (token) req.headers.Authorization = `Bearer ${token}`;
-  return req;
-});
+import ProviderDashboardPage from "./pages/ProviderDashboardPage";
+import ProviderBookingsPage from "./pages/ProviderBookingsPage";
+import ProviderEarningsPage from "./pages/ProviderEarningsPage";
 
 
 
@@ -60,8 +52,7 @@ const pageTitles = {
 };
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
+  const { user, token, initialLoading, login, register, registerProvider, logout } = useAuth();
   const [activePage, setActivePage] = useState("home");
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("error");
@@ -136,29 +127,37 @@ export default function App() {
   const primaryColor = "#136f63";
 
   useEffect(() => {
-    if (token) loadUser();
-    loadDoctors();
-    loadServices();
-    loadTutors();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const { data } = await API.get("/auth/me");
-      setUser(data.user);
+    if (token) {
       loadBookings();
       loadReviews();
       loadPayments();
       loadMessages();
       loadComplaints();
-      if (data.user.role === "admin") {
+      if (user?.role === "admin") {
         loadPendingProviders();
         loadAdminStats();
         loadAllComplaints();
       }
-    } catch {
-      localStorage.removeItem("token");
-      setToken("");
+    }
+    loadDoctors();
+    loadServices();
+    loadTutors();
+  }, [token, user]);
+
+  const loadUser = async () => {
+    try {
+      await loadBookings();
+      await loadReviews();
+      await loadPayments();
+      await loadMessages();
+      await loadComplaints();
+      if (user?.role === "admin") {
+        await loadPendingProviders();
+        await loadAdminStats();
+        await loadAllComplaints();
+      }
+    } catch (err) {
+      console.error("Failed to load user data:", err);
     }
   };
 
@@ -211,49 +210,63 @@ export default function App() {
     try {
       const { data } = await API.get("/reviews/my-reviews");
       setReviews(data.data || []);
-    } catch {}
+    } catch (err) {
+      console.error("Failed to load reviews:", err);
+    }
   };
 
   const loadPayments = async () => {
     try {
       const { data } = await API.get("/payments/history");
       setPayments(data.data || []);
-    } catch {}
+    } catch (err) {
+      console.error("Failed to load payments:", err);
+    }
   };
 
   const loadMessages = async () => {
     try {
       const { data } = await API.get("/messages/conversations");
       setMessages(data.data || []);
-    } catch {}
+    } catch (err) {
+      console.error("Failed to load messages:", err);
+    }
   };
 
   const loadPendingProviders = async () => {
     try {
       const { data } = await API.get("/admin/pending-providers");
       setPendingProviders(data.data || []);
-    } catch {}
+    } catch (err) {
+      console.error("Failed to load pending providers:", err);
+    }
   };
 
   const loadAdminStats = async () => {
     try {
       const { data } = await API.get("/admin/stats");
       setAdminStats(data.data);
-    } catch {}
+    } catch (err) {
+      console.error("Failed to load admin stats:", err);
+    }
   };
 
   const loadComplaints = async () => {
     try {
       const { data } = await API.get("/complaints/my");
       setComplaints(data.data || []);
-    } catch {}
+    } catch (err) {
+      console.error("Failed to load complaints:", err);
+    }
   };
 
   const loadAllComplaints = async () => {
     try {
       const { data } = await API.get("/complaints/all");
       setComplaints(data.data || []);
-    } catch {}
+    } catch (err) {
+      console.error("Failed to load all complaints:", err);
+    }
   };
 
   const submitComplaint = async (category, subject, description, onSuccess) => {
@@ -302,10 +315,7 @@ export default function App() {
     setLoading(true);
     setMessage("");
     try {
-      const { data } = await API.post("/auth/login", { email, password });
-      localStorage.setItem("token", data.token);
-      setToken(data.token);
-      setUser(data.user);
+      await login(email, password);
       setMessage("Login successful!");
       setMessageType("success");
     } catch (err) {
@@ -321,10 +331,7 @@ export default function App() {
     setLoading(true);
     setMessage("");
     try {
-      const { data } = await API.post("/auth/register", { name, email, password, phone, city });
-      localStorage.setItem("token", data.token);
-      setToken(data.token);
-      setUser(data.user);
+      await register({ name, email, password, phone, city });
       setMessage("Registration successful!");
       setMessageType("success");
     } catch (err) {
@@ -360,12 +367,7 @@ export default function App() {
       if (certificateFile) formData.append("certificate", certificateFile);
       if (experienceLetter) formData.append("experienceLetter", experienceLetter);
 
-      const { data } = await API.post("/auth/register-provider", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      localStorage.setItem("token", data.token);
-      setToken(data.token);
-      setUser(data.user);
+      await registerProvider(formData);
       setMessage("Provider registration submitted for review!");
       setMessageType("success");
     } catch (err) {
@@ -377,9 +379,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken("");
-    setUser(null);
+    logout();
     setActivePage("home");
   };
 
@@ -409,13 +409,19 @@ export default function App() {
   const sendMessage = async () => {
     if (!chatMessage.trim()) return;
     try {
-      await API.post("/messages/send", { receiverId: null, message: chatMessage });
-      setChatMessage("");
-      loadMessages();
-      setMessage("Message sent!");
-      setMessageType("success");
-    } catch {
-      setMessage("Failed to send message");
+      const response = await API.post("/messages/send", {
+        receiverId: messages.length > 0 ? messages[0]?.user?.id : null,
+        message: chatMessage
+      });
+      if (response.data.success) {
+        setChatMessage("");
+        loadMessages();
+        setMessage("Message sent!");
+        setMessageType("success");
+      }
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to send message. Please select a conversation first.");
+      setMessageType("error");
     }
   };
 
@@ -504,8 +510,9 @@ export default function App() {
         setShowPaymentMethodModal(false);
         setPaymentData(null);
       }
-    } catch {
-      setMessage("Payment failed. Please try again.");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Payment failed. Please try again.");
+      setMessageType("error");
     }
   };
 
@@ -543,8 +550,9 @@ export default function App() {
         setShowRemainingPaymentModal(false);
         setRemainingPaymentData(null);
       }
-    } catch {
-      setMessage("Payment failed");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Payment failed");
+      setMessageType("error");
     }
   };
 
@@ -568,8 +576,9 @@ export default function App() {
         setShowReviewModal(false);
         await loadReviews();
       }
-    } catch {
-      setMessage("Failed to submit review");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to submit review");
+      setMessageType("error");
     } finally {
       setLoading(false);
     }
@@ -582,8 +591,9 @@ export default function App() {
       setMessageType("success");
       loadPendingProviders();
       loadAdminStats();
-    } catch {
-      setMessage("Failed to update provider");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to update provider");
+      setMessageType("error");
     }
   };
 
@@ -788,6 +798,15 @@ export default function App() {
             adminStats={adminStats} pendingProviders={pendingProviders}
             verifyProvider={verifyProvider}
           />
+        )}
+        {activePage === "provider-dashboard" && user?.role === "provider" && (
+          <ProviderDashboardPage user={user} />
+        )}
+        {activePage === "provider-bookings" && user?.role === "provider" && (
+          <ProviderBookingsPage user={user} />
+        )}
+        {activePage === "provider-earnings" && user?.role === "provider" && (
+          <ProviderEarningsPage user={user} />
         )}
         {activePage === "reviews" && <ReviewsPage reviews={reviews} />}
         {activePage === "payments" && <PaymentsPage payments={payments} />}
