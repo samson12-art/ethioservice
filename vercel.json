@@ -1,8 +1,8 @@
 {
-  "buildCommand": "cd frontend && node node_modules/vite/bin/vite.js build",
+  "buildCommand": "cd frontend && npm install --include=dev && node node_modules/vite/bin/vite.js build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "cd frontend && npm install",
-  "framework": null,
+  "installCommand": "npm install",
+  "framework": "vite",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
