@@ -55,10 +55,8 @@ const connectDB = async () => {
     await sequelize.authenticate();
     dbConnected = true;
     console.log('PostgreSQL Connected');
-    if (process.env.NODE_ENV !== 'production') {
-      await sequelize.sync({ alter: true });
-      console.log('Tables synchronized');
-    }
+    await sequelize.sync({ alter: true });
+    console.log('Tables synchronized');
   } catch (error) {
     console.error('PostgreSQL Error:', error.message);
     if (!isServerless) {
