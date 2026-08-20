@@ -1,6 +1,7 @@
 export default function BookingModal({
   show, item, type, onClose, bookingDate, setBookingDate,
   bookingTime, setBookingTime, bookingMode, setBookingMode,
+  bookingDescription, setBookingDescription,
   onConfirm, loading, getTodayDate,
 }) {
   if (!show || !item) return null;
@@ -60,6 +61,16 @@ export default function BookingModal({
             </div>
           </label>
         )}
+
+        <label style={{ marginTop: "12px" }}>
+          Describe What You Need
+          <textarea
+            value={bookingDescription}
+            onChange={(e) => setBookingDescription(e.target.value)}
+            rows="3"
+            placeholder="Describe what you need help with (e.g., broken kitchen tap, Math tutoring for grade 10...)"
+          />
+        </label>
 
         <div className="modal-buttons">
           <button onClick={onConfirm} disabled={loading}>{loading ? "Processing..." : "Confirm & Continue"}</button>

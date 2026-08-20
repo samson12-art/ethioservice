@@ -1,4 +1,4 @@
-import { CalendarCheck, CreditCard, Clock } from "lucide-react";
+import { CalendarCheck, CreditCard, Clock, User, MessageSquare, Phone, Mail } from "lucide-react";
 
 function formatDate(dateStr) {
   if (!dateStr) return "Date not set";
@@ -66,6 +66,42 @@ export default function DashboardPage({ user, bookings, completeService, openRem
                   {countdown && countdown.expired && <span className="badge bad">⏰ Time passed</span>}
                 </div>
                 <h3 style={{ fontSize: "18px", marginBottom: "8px" }}>{b.itemName || "Service Booking"}</h3>
+                {b.description && (
+                  <div style={{
+                    background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px",
+                    padding: "10px", marginBottom: "12px"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                      <MessageSquare size={14} color="#1d4ed8" />
+                      <strong style={{ color: "#1d4ed8", fontSize: "13px" }}>Your Description</strong>
+                    </div>
+                    <p style={{ margin: 0, fontSize: "14px", lineHeight: "1.5" }}>{b.description}</p>
+                  </div>
+                )}
+                {b.providerName && (
+                  <div style={{
+                    background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px",
+                    padding: "10px", marginBottom: "12px"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                      <User size={14} color="#166534" />
+                      <strong style={{ color: "#166534", fontSize: "13px" }}>Provider Information</strong>
+                    </div>
+                    <div style={{ fontSize: "14px" }}>
+                      <p style={{ margin: "2px 0" }}><strong>Name:</strong> {b.providerName}</p>
+                      {b.providerEmail && (
+                        <p style={{ margin: "2px 0", display: "flex", alignItems: "center", gap: "4px" }}>
+                          <Mail size={12} /> {b.providerEmail}
+                        </p>
+                      )}
+                      {b.providerPhone && (
+                        <p style={{ margin: "2px 0", display: "flex", alignItems: "center", gap: "4px" }}>
+                          <Phone size={12} /> {b.providerPhone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "24px", marginBottom: "16px", color: "var(--muted)", fontSize: "14px" }}>
                   <div>
                     <p style={{ fontSize: "12px", marginBottom: "2px" }}>Date & Time</p>

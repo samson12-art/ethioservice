@@ -29,7 +29,7 @@ const providerNavItems = [
   { id: "provider-earnings", label: "Earnings", icon: DollarSign },
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "messages", label: "Messages", icon: MessageCircle },
-  { id: "complaints", label: "Complaints", icon: AlertTriangle },
+  { id: "provider-complaints", label: "Complaints", icon: AlertTriangle },
   { id: "help", label: "Help Center", icon: HelpCircle },
 ];
 

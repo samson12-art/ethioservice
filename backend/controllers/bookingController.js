@@ -2,10 +2,11 @@ const Booking = require('../models/Booking');
 const Service = require('../models/Service');
 const Doctor = require('../models/Doctor');
 const Tutor = require('../models/Tutor');
+const User = require('../models/User');
 
 const createBooking = async (req, res) => {
   try {
-    const { serviceType, itemId, bookingDate, time, bookingMode } = req.body;
+    const { serviceType, itemId, bookingDate, time, bookingMode, description } = req.body;
 
     let item = null;
     let totalPrice = 0;
@@ -44,13 +45,29 @@ const createBooking = async (req, res) => {
     const upfrontAmount = totalPrice * 0.0595;
     const remainingAmount = totalPrice - upfrontAmount;
 
+    let providerEmail = '';
+    let providerPhone = '';
+    if (item.providerId) {
+      const provider = await User.findByPk(parseInt(item.providerId));
+      if (provider) {
+        providerEmail = provider.email || '';
+        providerPhone = provider.phone || '';
+      }
+    }
+
     const booking = await Booking.create({
       serviceType,
       itemId: itemId.toString(),
       itemName,
       customerId: req.user.id.toString(),
+      customerName: req.user.name,
+      customerEmail: req.user.email,
+      customerPhone: req.user.phone || '',
+      description: description || '',
       providerId: item.providerId || '',
       providerName: item.providerName || item.name || '',
+      providerEmail,
+      providerPhone,
       bookingDate: new Date(bookingDate),
       time,
       totalPrice,

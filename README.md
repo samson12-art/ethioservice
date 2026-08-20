@@ -27,7 +27,7 @@ Online service booking platform for the Ethiopian market. Book service providers
 | Payments | Telebirr API, Chapa API |
 | Security | Helmet.js, express-rate-limit, express-validator |
 | Logging | Winston |
-| Deployment | Docker, Nginx, PM2 |
+| Deployment | Vercel (frontend), Render (backend), Supabase (database), Docker |
 
 ## Installation
 
@@ -91,6 +91,54 @@ See `backend/.env.example` for all required variables:
 | `CHAPA_SECRET_KEY` | Chapa API secret | For payments |
 | `CHAPA_PUBLIC_KEY` | Chapa API public key | For payments |
 | `TELEBIRR_APP_ID` | Telebirr app ID | For payments |
+
+## Cloud Deployment
+
+### Frontend (Vercel)
+
+1. Push your code to GitHub
+2. Go to [vercel.com](https://vercel.com) and import your repository
+3. Configure:
+   - **Framework Preset**: Vite
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Add environment variable:
+   - `VITE_API_URL` = `https://your-app.onrender.com/api`
+5. Deploy
+
+### Backend (Render)
+
+1. Go to [render.com](https://render.com) and create a new **Web Service**
+2. Connect your GitHub repository
+3. Configure:
+   - **Name**: ethioservice-api
+   - **Runtime**: Node
+   - **Build Command**: `cd backend && npm install`
+   - **Start Command**: `cd backend && node server.js`
+   - **Health Check Path**: `/api/health`
+4. Add environment variables:
+   - `NODE_ENV` = `production`
+   - `DATABASE_URL` = `postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`
+   - `JWT_SECRET` = (generate a strong random secret)
+   - `CORS_ORIGIN` = `https://your-app.vercel.app`
+   - `CHAPA_SECRET_KEY`, `CHAPA_PUBLIC_KEY`, etc.
+5. Deploy
+
+### Database (Supabase)
+
+1. Go to [supabase.com](https://supabase.com) and create a new project
+2. Go to **Settings** → **Database** → **Connection string**
+3. Copy the **URI** (under Pooler) and use it as `DATABASE_URL` in Render
+4. Run migrations on first deploy:
+   ```bash
+   cd backend
+   npx sequelize-cli db:migrate
+   ```
+5. Optionally seed the database:
+   ```bash
+   node seed.js
+   ```
 
 ## Docker Deployment
 

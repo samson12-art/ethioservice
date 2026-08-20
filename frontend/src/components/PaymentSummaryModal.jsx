@@ -4,36 +4,39 @@ export default function PaymentSummaryModal({ show, paymentData, onPayNow, onClo
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ textAlign: "center" }}>Payment Summary</h2>
-
+        <h2 style={{ textAlign: "center" }}>Booking Summary</h2>
         <div className="payment-highlight">
-          <div className="label">Upfront Payment</div>
-          <div className="amount">ETB {Math.round(paymentData.upfrontAmount)}</div>
+          <div className="label">Total Amount</div>
+          <div className="amount">ETB {Math.round(paymentData.totalAmount || 0)}</div>
         </div>
-
-        <div style={{ textAlign: "center", padding: "12px", border: "1px solid var(--border)", borderRadius: "8px", marginBottom: "16px" }}>
-          <p style={{ color: "var(--muted)", fontSize: "13px" }}>Remaining Payment</p>
-          <p style={{ fontSize: "24px", fontWeight: "800", color: "#f59e0b" }}>ETB {Math.round(paymentData.remainingAmount)}</p>
-          <p style={{ color: "var(--muted)", fontSize: "12px" }}>(94.05%)</p>
+        <div className="details">
+          <div>
+            <dt>Upfront Payment (20%)</dt>
+            <dd>ETB {Math.round(paymentData.upfrontAmount || 0)}</dd>
+          </div>
+          <div>
+            <dt>Remaining on Completion</dt>
+            <dd>ETB {Math.round(paymentData.remainingAmount || 0)}</dd>
+          </div>
         </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px" }}>
-          <span style={{ color: "var(--muted)" }}>Platform Fee</span>
-          <span style={{ fontWeight: "700" }}>ETB {Math.round(paymentData.serviceFee)} <span style={{ color: "var(--muted)", fontSize: "12px" }}>(0.95%)</span></span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px", fontSize: "14px" }}>
-          <span style={{ color: "var(--muted)" }}>Booking Guarantee</span>
-          <span style={{ fontWeight: "700" }}>ETB {Math.round(paymentData.guaranteeFee)} <span style={{ color: "var(--muted)", fontSize: "12px" }}>(5%)</span></span>
-        </div>
-
+        {paymentData.bookingDate && (
+          <div className="details" style={{ marginTop: 0 }}>
+            <div>
+              <dt>Booking Date</dt>
+              <dd>{paymentData.bookingDate}</dd>
+            </div>
+            <div>
+              <dt>Time</dt>
+              <dd>{paymentData.time || paymentData.bookingTime}</dd>
+            </div>
+          </div>
+        )}
         <div className="warning-box">
-          <strong>⚠ Important</strong><br />
-          <span style={{ fontSize: "12px" }}>5% guarantee fee is non-refundable. Booking is secured after upfront payment.</span>
+          You are required to pay 20% upfront. The remaining 80% is payable after the service is completed.
         </div>
-
         <div className="modal-buttons">
           <button onClick={onPayNow}>Pay Now</button>
-          <button className="secondary" onClick={onClose}>Cancel</button>
+          <button className="secondary" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>

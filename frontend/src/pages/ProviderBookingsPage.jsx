@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, User, Phone, Mail, MessageSquare } from "lucide-react";
 import API from "../services/api";
 
 export default function ProviderBookingsPage({ user }) {
@@ -65,14 +65,56 @@ export default function ProviderBookingsPage({ user }) {
                 {b.status?.replace(/_/g, ' ')}
               </span>
             </div>
-            <div className="details">
-              <div>
-                <dt>Customer ID</dt>
-                <dd>{b.customerId}</dd>
+
+            <div className="customer-info-box" style={{
+              background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px",
+              padding: "12px", marginTop: "12px"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                <User size={16} color="#166534" />
+                <strong style={{ color: "#166534" }}>Customer Information</strong>
               </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", fontSize: "14px" }}>
+                <span><strong>Name:</strong> {b.customerName || "N/A"}</span>
+                <span><strong>ID:</strong> {b.customerId}</span>
+                {b.customerEmail && (
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Mail size={12} /> {b.customerEmail}
+                  </span>
+                )}
+                {b.customerPhone && (
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Phone size={12} /> {b.customerPhone}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {b.description && (
+              <div style={{
+                background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px",
+                padding: "12px", marginTop: "12px"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  <MessageSquare size={16} color="#1d4ed8" />
+                  <strong style={{ color: "#1d4ed8" }}>What the Customer Needs</strong>
+                </div>
+                <p style={{ margin: 0, fontSize: "14px", lineHeight: "1.5" }}>{b.description}</p>
+              </div>
+            )}
+
+            <div className="details" style={{ marginTop: "12px" }}>
               <div>
                 <dt>Date</dt>
                 <dd>{new Date(b.bookingDate).toLocaleDateString()}</dd>
+              </div>
+              <div>
+                <dt>Time</dt>
+                <dd>{b.time}</dd>
+              </div>
+              <div>
+                <dt>Mode</dt>
+                <dd>{b.bookingMode}</dd>
               </div>
               <div>
                 <dt>Total Price</dt>

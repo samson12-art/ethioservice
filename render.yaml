@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: ethioservice-api
+    runtime: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+      - key: CHAPA_SECRET_KEY
+        sync: false
+      - key: CHAPA_PUBLIC_KEY
+        sync: false
+      - key: CHAPA_BASE_URL
+        value: https://api.chapa.co
+      - key: TELEBIRR_APP_ID
+        sync: false
+      - key: TELEBIRR_APP_KEY
+        sync: false
+      - key: TELEBIRR_SHORT_CODE
+        sync: false
+      - key: TELEBIRR_PUBLIC_KEY
+        sync: false
+      - key: TELEBIRR_RECEIVE_NAME
+        sync: false
+      - key: TELEBIRR_ENDPOINT_URL
+        sync: false

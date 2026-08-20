@@ -25,6 +25,7 @@ import AppointmentsPage from "./pages/AppointmentsPage";
 import HelpPage from "./pages/HelpPage";
 import ComplaintsPage from "./pages/ComplaintsPage";
 import AdminComplaintsPage from "./pages/AdminComplaintsPage";
+import ProviderComplaintsPage from "./pages/ProviderComplaintsPage";
 import ProviderDashboardPage from "./pages/ProviderDashboardPage";
 import ProviderBookingsPage from "./pages/ProviderBookingsPage";
 import ProviderEarningsPage from "./pages/ProviderEarningsPage";
@@ -49,6 +50,7 @@ const pageTitles = {
   help: "Help Center",
   complaints: "Complaints",
   "admin-complaints": "User Complaints",
+  "provider-complaints": "Assigned Complaints",
 };
 
 export default function App() {
@@ -108,6 +110,7 @@ export default function App() {
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("09:00");
   const [bookingMode, setBookingMode] = useState("online");
+  const [bookingDescription, setBookingDescription] = useState("");
 
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedReviewItem, setSelectedReviewItem] = useState(null);
@@ -122,6 +125,7 @@ export default function App() {
   const [chatMessage, setChatMessage] = useState("");
   const [searchHistory, setSearchHistory] = useState([]);
   const [complaints, setComplaints] = useState([]);
+  const [providerComplaints, setProviderComplaints] = useState([]);
 
   const isAdmin = user?.role === "admin";
   const primaryColor = "#136f63";
@@ -137,6 +141,9 @@ export default function App() {
         loadPendingProviders();
         loadAdminStats();
         loadAllComplaints();
+      }
+      if (user?.role === "provider") {
+        loadProviderComplaints();
       }
     }
     loadDoctors();
@@ -269,6 +276,15 @@ export default function App() {
     }
   };
 
+  const loadProviderComplaints = async () => {
+    try {
+      const { data } = await API.get("/complaints/provider");
+      setProviderComplaints(data.data || []);
+    } catch (err) {
+      console.error("Failed to load provider complaints:", err);
+    }
+  };
+
   const submitComplaint = async (category, subject, description, onSuccess) => {
     if (!category || !subject || !description) {
       setMessage("All fields are required");
@@ -304,6 +320,42 @@ export default function App() {
       }
     } catch (err) {
       setMessage(err.response?.data?.message || "Failed to send reply");
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const assignComplaint = async (complaintId, providerId, onSuccess) => {
+    setLoading(true);
+    try {
+      const { data } = await API.put(`/complaints/${complaintId}/assign`, { providerId });
+      if (data.success) {
+        setMessage(data.message || "Complaint assigned!");
+        setMessageType("success");
+        loadAllComplaints();
+        if (onSuccess) onSuccess();
+      }
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to assign complaint");
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateProviderNotes = async (complaintId, providerNotes, status, onSuccess) => {
+    setLoading(true);
+    try {
+      const { data } = await API.put(`/complaints/${complaintId}/follow-up`, { providerNotes, status });
+      if (data.success) {
+        setMessage("Follow-up updated!");
+        setMessageType("success");
+        loadProviderComplaints();
+        if (onSuccess) onSuccess();
+      }
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to update follow-up");
       setMessageType("error");
     } finally {
       setLoading(false);
@@ -469,6 +521,7 @@ export default function App() {
     setBookingDate("");
     setBookingTime("09:00");
     setBookingMode(item.online ? "online" : "inperson");
+    setBookingDescription("");
     setShowBookingModal(true);
   };
 
@@ -479,6 +532,7 @@ export default function App() {
       const { data } = await API.post("/bookings", {
         serviceType: selectedType, itemId: selectedItem.id,
         bookingDate, time: bookingTime, bookingMode,
+        description: bookingDescription,
       });
       if (data.success) {
         setPaymentData(data.data);
@@ -821,7 +875,10 @@ export default function App() {
           <ComplaintsPage complaints={complaints} submitComplaint={submitComplaint} loading={loading} />
         )}
         {activePage === "admin-complaints" && isAdmin && (
-          <AdminComplaintsPage complaints={complaints} replyToComplaint={replyToComplaint} loading={loading} />
+          <AdminComplaintsPage complaints={complaints} replyToComplaint={replyToComplaint} assignComplaint={assignComplaint} loading={loading} />
+        )}
+        {activePage === "provider-complaints" && user?.role === "provider" && (
+          <ProviderComplaintsPage complaints={providerComplaints} updateProviderNotes={updateProviderNotes} loading={loading} />
         )}
         {activePage === "help" && <HelpPage />}
       </section>
@@ -832,6 +889,7 @@ export default function App() {
         bookingDate={bookingDate} setBookingDate={setBookingDate}
         bookingTime={bookingTime} setBookingTime={setBookingTime}
         bookingMode={bookingMode} setBookingMode={setBookingMode}
+        bookingDescription={bookingDescription} setBookingDescription={setBookingDescription}
         onConfirm={confirmBooking} loading={loading} getTodayDate={getTodayDate}
       />
       <ReviewModal

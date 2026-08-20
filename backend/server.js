@@ -46,8 +46,10 @@ app.use(express.json({ limit: '10mb' }));
 const { protect } = require('./middleware/auth');
 app.use('/uploads', protect, express.static(path.join(__dirname, 'uploads')));
 
-// Connect to database
-connectDB();
+// Connect to database (non-blocking for serverless)
+connectDB().catch((err) => {
+  console.error('DB connection failed:', err.message);
+});
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
@@ -118,39 +120,46 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-});
-
-// Graceful shutdown
-const gracefulShutdown = async (signal) => {
-  logger.info(`${signal} received. Starting graceful shutdown...`);
-  server.close(async () => {
-    logger.info('HTTP server closed');
-    try {
-      await sequelize.close();
-      logger.info('Database connection closed');
-    } catch (err) {
-      logger.error('Error closing database:', err);
-    }
-    process.exit(0);
+// Only start server when run directly (not when imported by Vercel)
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+  const server = app.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
   });
 
-  setTimeout(() => {
-    logger.error('Forced shutdown after timeout');
-    process.exit(1);
-  }, 10000);
-};
+  const gracefulShutdown = async (signal) => {
+    logger.info(`${signal} received. Starting graceful shutdown...`);
+    server.close(async () => {
+      logger.info('HTTP server closed');
+      try {
+        await sequelize.close();
+        logger.info('Database connection closed');
+      } catch (err) {
+        logger.error('Error closing database:', err);
+      }
+      process.exit(0);
+    });
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('unhandledRejection', (err) => {
-  logger.error('Unhandled Rejection:', err);
-});
-process.on('uncaughtException', (err) => {
-  logger.error('Uncaught Exception:', err);
-  gracefulShutdown('uncaughtException');
-});
+    setTimeout(() => {
+      logger.error('Forced shutdown after timeout');
+      process.exit(1);
+    }, 10000);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('unhandledRejection', (err) => {
+    logger.error('Unhandled Rejection:', err);
+  });
+  process.on('uncaughtException', (err) => {
+    logger.error('Uncaught Exception:', err);
+    gracefulShutdown('uncaughtException');
+  });
+} else {
+  // In serverless, handle unhandled rejections without exiting
+  process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err);
+  });
+}
 
 module.exports = app;
