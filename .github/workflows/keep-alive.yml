@@ -1,0 +1,28 @@
+name: Keep Render Backend Warm
+
+# Pings the Render backend /api/health periodically so the free tier
+# instance stays awake instead of sleeping after ~15 min of idle time.
+
+on:
+  schedule:
+    # Every 10 minutes (Render free-tier idle threshold is ~15 minutes)
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health endpoint
+        run: |
+          set -e
+          code=$(curl -s -o /dev/null -w "%{http_code}" -m 30 "$HEALTH_URL")
+          echo "Health endpoint returned HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "Health check failed"
+            exit 1
+          fi
+        env:
+          # Set this repository secret to your Render backend health URL, e.g.
+          # https://ethioservice-api.onrender.com/api/health
+          HEALTH_URL: ${{ secrets.RENDER_HEALTH_URL }}
