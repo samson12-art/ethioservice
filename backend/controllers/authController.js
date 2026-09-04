@@ -7,7 +7,8 @@ const generateToken = (id) => {
 
 const registerCustomer = async (req, res) => {
   try {
-    const { name, email, password, phone, city } = req.body;
+    const { name, password, phone, city } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
@@ -50,7 +51,8 @@ const registerCustomer = async (req, res) => {
 
 const registerProvider = async (req, res) => {
   try {
-    const { name, email, password, phone, city, profession, experience, price, priceUnit, description, agreedToTerms } = req.body;
+    const { name, password, phone, city, profession, experience, price, priceUnit, description, agreedToTerms } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
 
     if (!name || !email || !password || !phone || !profession || !experience || !price) {
       return res.status(400).json({ success: false, message: 'All required fields must be provided' });
@@ -116,7 +118,8 @@ const registerProvider = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const password = req.body.password;
+    const email = req.body.email?.trim().toLowerCase();
 
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'Email and password are required' });

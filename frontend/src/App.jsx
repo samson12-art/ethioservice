@@ -371,7 +371,10 @@ export default function App() {
       setMessage("Login successful!");
       setMessageType("success");
     } catch (err) {
-      setMessage(err.response?.data?.message || "Login failed");
+      setMessage(
+        err.response?.data?.message ||
+        "Cannot reach the login service. Start the backend and try again."
+      );
       setMessageType("error");
     } finally {
       setLoading(false);
@@ -672,14 +675,14 @@ export default function App() {
                 <form onSubmit={handleLogin} className="form-stack">
                   <label>
                     Email
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    <input type="email" placeholder="you@example.com" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </label>
                   <label>
                     <span className="field-heading">
                       Password
                     </span>
                     <span className="password-field">
-                      <input type={showLoginPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required />
+                      <input type={showLoginPassword ? "text" : "password"} placeholder="Enter your password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                       <button type="button" className="icon-button" onClick={() => setShowLoginPassword(!showLoginPassword)}>
                         {showLoginPassword ? "🙈" : "👁"}
                       </button>
