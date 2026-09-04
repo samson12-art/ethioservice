@@ -94,22 +94,26 @@ See `backend/.env.example` for all required variables:
 
 ## Cloud Deployment
 
-### Frontend (Vercel)
+The recommended production stack is:
+- **Frontend**: Vercel
+- **Backend**: Render (Node web service)
+- **Database**: Supabase (PostgreSQL)
 
-1. Push your code to GitHub
-2. Go to [vercel.com](https://vercel.com) and import your repository
-3. Configure:
-   - **Framework Preset**: Vite
-   - **Root Directory**: `frontend`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-4. Add environment variable:
-   - `VITE_API_URL` = `https://your-app.onrender.com/api`
-5. Deploy
+### Database (Supabase)
+
+1. Go to [supabase.com](https://supabase.com) and create a new project
+2. Go to **Settings** → **Database** → **Connection string**
+3. Copy the **URI** (under Pooler) and use it as `DATABASE_URL`
+4. Tables are auto-created/updated on backend startup via `sequelize.sync({ alter: true })`, so no manual migration is required. Optionally seed afterwards:
+   ```bash
+   cd backend
+   node seed.js
+   ```
 
 ### Backend (Render)
 
 1. Go to [render.com](https://render.com) and create a new **Web Service**
+   (or use the provided `render.yaml` Blueprint: **New** → **Blueprint** → select `render.yaml`)
 2. Connect your GitHub repository
 3. Configure:
    - **Name**: ethioservice-api
@@ -125,20 +129,20 @@ See `backend/.env.example` for all required variables:
    - `CHAPA_SECRET_KEY`, `CHAPA_PUBLIC_KEY`, etc.
 5. Deploy
 
-### Database (Supabase)
+### Frontend (Vercel)
 
-1. Go to [supabase.com](https://supabase.com) and create a new project
-2. Go to **Settings** → **Database** → **Connection string**
-3. Copy the **URI** (under Pooler) and use it as `DATABASE_URL` in Render
-4. Run migrations on first deploy:
-   ```bash
-   cd backend
-   npx sequelize-cli db:migrate
-   ```
-5. Optionally seed the database:
-   ```bash
-   node seed.js
-   ```
+1. Push your code to GitHub
+2. Go to [vercel.com](https://vercel.com) and import your repository
+3. Configure:
+   - **Framework Preset**: Vite
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Add environment variable:
+   - `VITE_API_URL` = `https://ethioservice-api.onrender.com/api`
+5. Deploy
+
+> Note: The backend runs on Render, so there is **no** Vercel serverless `api/` function. `vercel.json` only serves the static frontend build.
 
 ## Docker Deployment
 
