@@ -35,8 +35,15 @@ app.use('/api/auth/register-provider', authLimiter);
 
 // CORS
 const corsOrigin = process.env.CORS_ORIGIN || '*';
+const allowedOrigins = corsOrigin === '*' ? '*' : corsOrigin.split(',').map(s => s.trim());
 app.use(cors({
-  origin: corsOrigin === '*' ? '*' : corsOrigin.split(',').map(s => s.trim()),
+  origin(origin, callback) {
+    // Allow requests with no origin (curl, server-to-server) and credentials
+    if (!origin || allowedOrigins === '*' || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
   credentials: true
 }));
 
