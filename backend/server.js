@@ -35,7 +35,13 @@ app.use('/api/auth/register-provider', authLimiter);
 
 // CORS
 const corsOrigin = process.env.CORS_ORIGIN || '*';
-const allowedOrigins = corsOrigin === '*' ? '*' : corsOrigin.split(',').map(s => s.trim());
+const productionFrontendOrigin = 'https://ethioservice.vercel.app';
+const allowedOrigins = corsOrigin === '*'
+  ? '*'
+  : [...new Set([
+      ...corsOrigin.split(',').map(s => s.trim()),
+      productionFrontendOrigin
+    ])];
 app.use(cors({
   origin(origin, callback) {
     // Allow requests with no origin (curl, server-to-server) and credentials
