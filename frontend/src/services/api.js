@@ -1,7 +1,10 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api",
+  // In local Vite development, always use the proxy configured in vite.config.js.
+  // This prevents a stale VITE_API_URL from sending requests to an unavailable
+  // deployed backend.
+  baseURL: import.meta.env.DEV ? "/api" : (import.meta.env.VITE_API_URL || "/api"),
 });
 
 API.interceptors.request.use((req) => {
